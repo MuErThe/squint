@@ -121,16 +121,41 @@ export async function fetchTop10(): Promise<LeaderboardRow[]> {
   const sb = getSupabase();
   if (!sb) return [];
   // Over-fetch so that after collapsing duplicate runs per player we can still
-  // surface a full top-10 of distinct names.
+  // surface a full top-10 of distinct entries.
   const { data, error } = await sb.rpc("top_scores", { p_limit: 50 });
   if (error || !Array.isArray(data)) return [];
   const rows = data as LeaderboardRow[];
-  const seen = new Map<string, LeaderboardRow>();
+
+  // Two-pass dedup:
+  //   1. Same case-insensitive name → keep the first sighting. Rows arrive
+  //      sorted best-first, so first = that player's best run.
+  //   2. Same (score, lines, level) tuple → keep the most recent. Catches the
+  //      case where a player registered under more than one spelling and ran
+  //      the exact same stats — only the latest record survives.
+  const byName = new Map<string, LeaderboardRow>();
   for (const r of rows) {
     const key = (r.name ?? "").toLowerCase();
-    if (!seen.has(key)) seen.set(key, r);
+    if (!byName.has(key)) byName.set(key, r);
   }
-  return Array.from(seen.values())
+
+  const byStats = new Map<string, LeaderboardRow>();
+  for (const r of byName.values()) {
+    const key = `${r.score}|${r.lines}|${r.level}`;
+    const prev = byStats.get(key);
+    if (
+      !prev ||
+      new Date(r.created_at).getTime() > new Date(prev.created_at).getTime()
+    ) {
+      byStats.set(key, r);
+    }
+  }
+
+  return Array.from(byStats.values())
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
     .slice(0, 10)
     .map((r, i) => ({ ...r, rank: i + 1 }));
 }

@@ -222,7 +222,37 @@ as $$
 $$;
 
 -- ============================================================
--- 7. Permissions: let the anon role call our functions.
+-- 7. Auto-dedup trigger
+--    When a new row is inserted, drop any older row from the SAME player
+--    with identical (score, lines, level). Keeps the `scores` table tidy
+--    without ever touching another player's rows.
+-- ============================================================
+
+create or replace function public.dedup_score_after_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.scores
+  where id <> new.id
+    and name = new.name
+    and score = new.score
+    and lines = new.lines
+    and level = new.level
+    and created_at < new.created_at;
+  return new;
+end;
+$$;
+
+drop trigger if exists scores_dedup_after_insert on public.scores;
+create trigger scores_dedup_after_insert
+  after insert on public.scores
+  for each row execute function public.dedup_score_after_insert();
+
+-- ============================================================
+-- 8. Permissions: let the anon role call our functions.
 --    (Reading the tables is already covered by RLS.)
 -- ============================================================
 
