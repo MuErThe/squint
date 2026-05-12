@@ -76,19 +76,6 @@ export function drawHandOverlay({
 }: DrawArgs) {
   ctx.clearRect(0, 0, width, height);
 
-  // Drop zone dashed line at y = 0.70 OF THE VIDEO rect, not the canvas.
-  // (Landmark y is normalised to the video frame.)
-  const dropY = videoRect.y + videoRect.h * 0.7;
-  ctx.save();
-  ctx.setLineDash([8, 8]);
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = dropZoneActive ? THEME.accentHot : THEME.inkFaint;
-  ctx.beginPath();
-  ctx.moveTo(videoRect.x, dropY);
-  ctx.lineTo(videoRect.x + videoRect.w, dropY);
-  ctx.stroke();
-  ctx.restore();
-
   // Target skeleton alpha — fades as hand disappears
   const targetSkelAlpha = landmarks ? 1 : 0;
   state.skeletonAlpha = lerp(state.skeletonAlpha, targetSkelAlpha, 0.18);

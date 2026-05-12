@@ -23,10 +23,6 @@ const DROP_Y_THRESHOLD = 0.7;
 let prevPinched = false;
 let lastPinchTime = 0;
 
-interface ResultRefs {
-  movementFreezeUntilRef: React.MutableRefObject<number>;
-}
-
 export function onHandResults(
   results: Results,
   gestureRef: React.MutableRefObject<GestureState>,
@@ -73,12 +69,21 @@ export function onHandResults(
   const normalizedPinch = handSize > 0 ? pinchDist / handSize : 1;
   g.normalizedPinch = normalizedPinch;
 
-  // Hysteresis on pinch open/close
+  // Require the non-pinching fingers (middle, ring, pinky) to be extended.
+  // A folded fist with thumb+index touching should NOT trigger a rotate.
+  const handOpen =
+    isFingerExtended(lm, 12, 10, wrist, handSize) &&
+    isFingerExtended(lm, 16, 14, wrist, handSize) &&
+    isFingerExtended(lm, 20, 18, wrist, handSize);
+
+  // Hysteresis on pinch open/close — gated by an open hand on rising edge,
+  // but a pinch that's already active is allowed to hold even if the other
+  // fingers wobble slightly, until the user opens the thumb/index gap.
   let isPinched: boolean;
   if (prevPinched) {
     isPinched = normalizedPinch < PINCH_RELEASE;
   } else {
-    isPinched = normalizedPinch < PINCH_THRESHOLD;
+    isPinched = normalizedPinch < PINCH_THRESHOLD && handOpen;
   }
 
   const now = performance.now();
@@ -95,8 +100,6 @@ export function onHandResults(
   g.dropZoneActive = indexTip.y > DROP_Y_THRESHOLD;
 }
 
-// Silence unused-import warning when ResultRefs typedef is re-exported
-export type { ResultRefs };
 
 // ----- 2D overlay drawing loop -----
 
@@ -174,9 +177,28 @@ function clamp(v: number, lo: number, hi: number): number {
 }
 
 /**
- * Letterbox calculation matching `object-fit: contain`. Returns the visible
- * rect of the video inside a (cw, ch)-sized canvas given the intrinsic video
- * dimensions (vw, vh). Falls back to the full canvas while metadata is loading.
+ * True when the given finger is extended — i.e. its tip sits meaningfully
+ * farther from the wrist than its PIP joint, scaled by hand size so the
+ * check is invariant to camera distance.
+ */
+function isFingerExtended(
+  lm: HandLandmark[],
+  tipIdx: number,
+  pipIdx: number,
+  wrist: HandLandmark,
+  handSize: number,
+): boolean {
+  if (handSize <= 0) return false;
+  const tipToWrist = distance3(lm[tipIdx], wrist);
+  const pipToWrist = distance3(lm[pipIdx], wrist);
+  return tipToWrist > pipToWrist + 0.08 * handSize;
+}
+
+/**
+ * Fit calculation matching `object-fit: cover`. Returns the rect occupied by
+ * the source video inside a (cw, ch)-sized canvas, with the overflowing axis
+ * extending beyond the canvas bounds. Falls back to the full canvas while
+ * metadata is loading.
  */
 function computeVideoRect(
   cw: number,
@@ -188,13 +210,13 @@ function computeVideoRect(
   const videoAspect = vw / vh;
   const canvasAspect = cw / ch;
   if (videoAspect > canvasAspect) {
-    // wider than canvas → letterbox top/bottom
-    const w = cw;
-    const h = cw / videoAspect;
-    return { x: 0, y: (ch - h) / 2, w, h };
+    // wider than canvas → overflow left/right (height fills)
+    const h = ch;
+    const w = ch * videoAspect;
+    return { x: (cw - w) / 2, y: 0, w, h };
   }
-  // taller than canvas → letterbox left/right
-  const h = ch;
-  const w = ch * videoAspect;
-  return { x: (cw - w) / 2, y: 0, w, h };
+  // taller than canvas → overflow top/bottom (width fills)
+  const w = cw;
+  const h = cw / videoAspect;
+  return { x: 0, y: (ch - h) / 2, w, h };
 }

@@ -161,10 +161,10 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-40 flex items-start md:items-center justify-center px-6 py-6 overflow-y-auto"
+          className="fixed inset-0 z-40 flex items-start md:items-center justify-center px-6 py-6 overflow-y-auto overflow-x-hidden"
           style={{
-            background: "rgba(14,10,20,0.78)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(14,10,20,0.9)",
+            backdropFilter: "blur(24px)",
           }}
         >
           <motion.div
@@ -188,7 +188,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                 className="font-display text-[10px] tracking-[0.32em] mb-3 text-center"
                 style={{ color: "var(--accent)" }}
               >
-                ─── insert hand to continue ───
+                ─── byo hand ───
               </div>
               <h1
                 className="font-display tracking-[0.18em] leading-[0.95] mb-5 text-center"
@@ -292,77 +292,6 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                 )}
               </div>
 
-              {/* Secondary links — kept small so the START button stays the
-                  primary call-to-action. */}
-              <div className="flex items-center justify-center gap-4 mb-3 font-mono text-[10px] uppercase tracking-[0.22em]">
-                <button
-                  type="button"
-                  onClick={() => setRulesOpen((o) => !o)}
-                  className="transition-colors flex items-center gap-1"
-                  style={{ color: rulesOpen ? "var(--accent)" : "var(--ink-dim)" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--accent)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = rulesOpen
-                      ? "var(--accent)"
-                      : "var(--ink-dim)")
-                  }
-                >
-                  <span>{rulesOpen ? "▾" : "▸"}</span>
-                  {rulesOpen ? "hide rules" : "show rules"}
-                </button>
-                {lbOnline && (
-                  <>
-                    <span style={{ color: "var(--panel-border-strong)" }}>·</span>
-                    <button
-                      type="button"
-                      onClick={() => setBoardOpen(true)}
-                      className="transition-colors flex items-center gap-1.5"
-                      style={{ color: "var(--ink-dim)" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = "var(--accent)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "var(--ink-dim)")
-                      }
-                    >
-                      <span style={{ fontSize: 12 }}>🏆</span>
-                      view leaderboard
-                    </button>
-                  </>
-                )}
-              </div>
-              <AnimatePresence initial={false}>
-                {rulesOpen && (
-                  <motion.div
-                    key="rules"
-                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                    animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
-                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                    transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="overflow-hidden"
-                  >
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <ControlHint
-                        num="01"
-                        title="STEER"
-                        body="move your hand left or right to slide the falling tetromino"
-                      />
-                      <ControlHint
-                        num="02"
-                        title="PINCH TO ROTATE"
-                        body="touch thumb to index — each pinch rotates the piece 90°"
-                      />
-                      <ControlHint
-                        num="03"
-                        title="DROP"
-                        body="lower your hand into the bottom strip to fast-fall"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               {error && (
                 <div
@@ -377,7 +306,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                 </div>
               )}
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 mt-6">
                 <button
                   disabled={busy}
                   onClick={() => handleStart("camera")}
@@ -391,7 +320,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                 >
                   {busy
                     ? busyReason.toUpperCase() || "WORKING…"
-                    : "▶ START WITH CAMERA"}
+                    : "▶ PLAY WITH HANDS"}
                 </button>
                 <button
                   disabled={busy}
@@ -404,17 +333,55 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
               </div>
             </div>
 
-            <div
-              className="px-8 md:px-10 py-3 font-mono text-[9px] uppercase tracking-[0.22em] border-t text-center"
-              style={{
-                borderColor: "var(--panel-border)",
-                color: "var(--ink-dim)",
-                background: "rgba(0,0,0,0.25)",
-              }}
-            >
-              ← → move · ↑ rotate · ↓ soft · space hard
-            </div>
+            {lbOnline && (
+              <button
+                type="button"
+                onClick={() => setBoardOpen(true)}
+                className="w-full px-8 md:px-10 py-3 font-mono text-[10px] uppercase tracking-[0.22em] border-t transition-colors flex items-center justify-center gap-2 hover:bg-[rgba(245,182,81,0.08)]"
+                style={{
+                  borderColor: "var(--panel-border)",
+                  color: "var(--ink-dim)",
+                  background: "rgba(0,0,0,0.25)",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = "var(--accent)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = "var(--ink-dim)")
+                }
+              >
+                <span style={{ fontSize: 13 }}>🏆</span>
+                view leaderboard
+              </button>
+            )}
           </motion.div>
+          <AnimatePresence>
+            {!rulesOpen && (
+              <motion.button
+                key="rules-trigger"
+                type="button"
+                onClick={() => setRulesOpen(true)}
+                aria-label="show rules"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="fixed top-4 right-4 z-[55] font-display text-[11px] tracking-[0.24em] px-3.5 py-2 rounded-[2px] border transition-all duration-150 hover:brightness-110 hover:-translate-y-px flex items-center gap-1.5"
+                style={{
+                  borderColor: "var(--accent)",
+                  color: "#1a1108",
+                  background: "var(--accent)",
+                  boxShadow:
+                    "0 0 0 1px rgba(245,182,81,0.35), 0 0 24px rgba(245,182,81,0.55), 0 6px 18px rgba(0,0,0,0.45)",
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ fontSize: 12, lineHeight: 1 }}>?</span>
+                RULES
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <RulesPanel open={rulesOpen} onClose={() => setRulesOpen(false)} />
           <LeaderboardModal
             show={boardOpen}
             onClose={() => setBoardOpen(false)}
@@ -426,45 +393,430 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
   );
 }
 
-function ControlHint({
+function RulesPanel({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  // Close on Escape for keyboard parity.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            key="rules-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+            className="fixed inset-0 z-50"
+            style={{ background: "rgba(0,0,0,0.45)" }}
+          />
+          <motion.aside
+            key="rules-panel"
+            role="dialog"
+            aria-label="rules"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 34 }}
+            className="panel-bg fixed top-0 right-0 z-50 h-full w-full max-w-[380px] border-l overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{
+              borderColor: "var(--panel-border-strong)",
+              boxShadow: "-24px 0 60px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div
+              className="sticky top-0 flex items-center justify-between px-6 py-4 border-b"
+              style={{
+                borderColor: "var(--panel-border)",
+                background: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <div>
+                <div
+                  className="font-display text-[9px] tracking-[0.32em] mb-0.5"
+                  style={{ color: "var(--accent)" }}
+                >
+                  ─── manual ───
+                </div>
+                <h2
+                  className="font-display tracking-[0.22em] text-lg"
+                  style={{ color: "var(--ink)" }}
+                >
+                  RULES
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="close rules"
+                className="w-8 h-8 flex items-center justify-center rounded-[2px] border transition-colors hover:bg-[rgba(245,182,81,0.18)]"
+                style={{
+                  borderColor: "var(--panel-border-strong)",
+                  color: "var(--accent)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div
+                className="flex items-center gap-3 font-display text-[10px] tracking-[0.32em]"
+                style={{ color: "var(--accent)" }}
+              >
+                <span
+                  className="flex-1 h-px"
+                  style={{ background: "var(--panel-border-strong)" }}
+                />
+                hand gestures
+                <span
+                  className="flex-1 h-px"
+                  style={{ background: "var(--panel-border-strong)" }}
+                />
+              </div>
+
+              <RuleRow
+                num="01"
+                title="STEER"
+                body="move your hand left or right to slide the falling tetromino across the board"
+                illo={<HandIllustration type="steer" />}
+              />
+              <RuleRow
+                num="02"
+                title="PINCH TO ROTATE"
+                body="touch thumb to index finger — each pinch rotates the piece 90 degrees clockwise"
+                illo={<HandIllustration type="pinch" />}
+              />
+              <RuleRow
+                num="03"
+                title="DROP"
+                body="lower your hand into the bottom strip of the camera frame to fast-fall the piece"
+                illo={<HandIllustration type="drop" />}
+              />
+
+              <div
+                className="flex items-center gap-3 mt-2 font-display text-[10px] tracking-[0.32em]"
+                style={{ color: "var(--accent)" }}
+              >
+                <span
+                  className="flex-1 h-px"
+                  style={{ background: "var(--panel-border-strong)" }}
+                />
+                keyboard fallback
+                <span
+                  className="flex-1 h-px"
+                  style={{ background: "var(--panel-border-strong)" }}
+                />
+              </div>
+
+              <RuleRow
+                num="04"
+                title="MOVE"
+                body="press the left or right arrow key to slide the piece across the board"
+                illo={<KeyIllustration type="arrows-lr" />}
+              />
+              <RuleRow
+                num="05"
+                title="ROTATE"
+                body="press the up arrow key — each tap rotates the piece 90 degrees clockwise"
+                illo={<KeyIllustration type="arrow-up" />}
+              />
+              <RuleRow
+                num="06"
+                title="SOFT DROP"
+                body="hold the down arrow key to accelerate the piece downward"
+                illo={<KeyIllustration type="arrow-down" />}
+              />
+              <RuleRow
+                num="07"
+                title="HARD DROP"
+                body="hit the space bar to slam the piece straight to the bottom"
+                illo={<KeyIllustration type="spacebar" />}
+              />
+            </div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function RuleRow({
   num,
   title,
   body,
+  illo,
 }: {
   num: string;
   title: string;
   body: string;
+  illo: React.ReactNode;
 }) {
   return (
     <div
-      className="rounded-[2px] border px-2.5 py-2 flex flex-col gap-0.5"
+      className="rounded-[2px] border px-3 py-3 flex gap-3 items-start"
       style={{
         borderColor: "var(--panel-border)",
         background:
-          "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18))",
+          "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.22))",
       }}
     >
-      <div className="flex items-baseline justify-between">
-        <span
-          className="font-display text-[10px] tracking-[0.22em]"
-          style={{ color: "var(--accent)" }}
-        >
-          {title}
-        </span>
-        <span
-          className="font-display text-[9px]"
+      <div
+        className="shrink-0 w-[88px] h-[88px] rounded-[2px] border flex items-center justify-center"
+        style={{
+          borderColor: "var(--panel-border)",
+          background: "rgba(0,0,0,0.35)",
+          color: "var(--accent)",
+        }}
+      >
+        {illo}
+      </div>
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="flex items-baseline justify-between">
+          <span
+            className="font-display text-[11px] tracking-[0.22em]"
+            style={{ color: "var(--accent)" }}
+          >
+            {title}
+          </span>
+          <span
+            className="font-display text-[9px]"
+            style={{ color: "var(--ink-dim)" }}
+          >
+            {num}
+          </span>
+        </div>
+        <p
+          className="font-mono text-[10px] uppercase tracking-[0.06em] leading-snug"
           style={{ color: "var(--ink-dim)" }}
         >
-          {num}
-        </span>
+          {body}
+        </p>
       </div>
-      <p
-        className="font-mono text-[9.5px] uppercase tracking-[0.06em] leading-snug"
-        style={{ color: "var(--ink-dim)" }}
-      >
-        {body}
-      </p>
     </div>
+  );
+}
+
+function KeyIllustration({
+  type,
+}: {
+  type: "arrows-lr" | "arrow-up" | "arrow-down" | "spacebar";
+}) {
+  const stroke = "currentColor";
+  const sw = 1.4;
+  if (type === "arrows-lr") {
+    return (
+      <svg
+        viewBox="0 0 80 60"
+        width="76"
+        height="56"
+        fill="none"
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* left key */}
+        <rect x="4" y="16" width="30" height="28" rx="4" />
+        <path d="M26 30 L14 30 M19 25 L14 30 L19 35" strokeWidth={1.6} />
+        {/* right key */}
+        <rect x="46" y="16" width="30" height="28" rx="4" />
+        <path d="M54 30 L66 30 M61 25 L66 30 L61 35" strokeWidth={1.6} />
+      </svg>
+    );
+  }
+  if (type === "arrow-up") {
+    return (
+      <svg
+        viewBox="0 0 80 70"
+        width="58"
+        height="58"
+        fill="none"
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* curved rotation hint */}
+        <path
+          d="M16 14 Q40 6 64 14"
+          strokeDasharray="2 3"
+          opacity="0.55"
+        />
+        <path d="M60 9 L64 14 L59 17" opacity="0.55" />
+        {/* key */}
+        <rect x="22" y="22" width="36" height="36" rx="4" />
+        <path d="M40 48 L40 32 M32 40 L40 32 L48 40" strokeWidth={1.6} />
+      </svg>
+    );
+  }
+  if (type === "arrow-down") {
+    return (
+      <svg
+        viewBox="0 0 80 80"
+        width="58"
+        height="64"
+        fill="none"
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* key */}
+        <rect x="22" y="10" width="36" height="36" rx="4" />
+        <path d="M40 20 L40 36 M32 28 L40 36 L48 28" strokeWidth={1.6} />
+        {/* motion trails */}
+        <path d="M28 56 L52 56" strokeDasharray="2 3" opacity="0.55" />
+        <path d="M32 64 L48 64" strokeDasharray="2 3" opacity="0.4" />
+        <path d="M36 72 L44 72" strokeDasharray="2 3" opacity="0.28" />
+      </svg>
+    );
+  }
+  // spacebar
+  return (
+    <svg
+      viewBox="0 0 90 70"
+      width="78"
+      height="60"
+      fill="none"
+      stroke={stroke}
+      strokeWidth={sw}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* wide key */}
+      <rect x="6" y="10" width="78" height="20" rx="4" />
+      <text
+        x="45"
+        y="24"
+        textAnchor="middle"
+        fontFamily="ui-monospace, SFMono-Regular, monospace"
+        fontSize="8"
+        letterSpacing="3"
+        fill={stroke}
+        stroke="none"
+      >
+        SPACE
+      </text>
+      {/* slam trail */}
+      <path d="M18 40 L72 40" strokeDasharray="2 3" opacity="0.55" />
+      <path d="M28 50 L62 50" strokeDasharray="2 3" opacity="0.38" />
+      <path d="M45 56 L45 64 M41 60 L45 64 L49 60" strokeWidth={1.6} />
+    </svg>
+  );
+}
+
+function HandIllustration({ type }: { type: "steer" | "pinch" | "drop" }) {
+  const stroke = "currentColor";
+  const sw = 1.3;
+  if (type === "steer") {
+    return (
+      <svg
+        viewBox="0 0 110 70"
+        width="86"
+        height="54"
+        fill="none"
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* left arrow */}
+        <path d="M24 36 L6 36 M14 30 L6 36 L14 42" />
+        {/* hand pointing up */}
+        <g transform="translate(38 4)">
+          {/* fingers — varied heights (index, middle, ring, pinky) */}
+          <path d="M4 26 L4 14 Q4 10 7 10 Q10 10 10 14 L10 26" strokeWidth={2} />
+          <path d="M11 26 L11 6 Q11 2 14 2 Q17 2 17 6 L17 26" strokeWidth={2} />
+          <path d="M18 26 L18 8 Q18 4 21 4 Q24 4 24 8 L24 26" strokeWidth={2} />
+          <path d="M25 26 L25 16 Q25 12 27 12 Q29 12 29 16 L29 26" strokeWidth={2} />
+          {/* palm (rounded U) */}
+          <path d="M2 26 Q2 56 17 56 Q32 56 32 26" />
+          {/* thumb curving out from lower-left */}
+          <path d="M2 34 Q-8 32 -10 42" strokeWidth={2} />
+          {/* knuckle crease for warmth */}
+          <path d="M6 40 Q16 44 28 40" opacity="0.45" />
+        </g>
+        {/* right arrow */}
+        <path d="M86 36 L104 36 M96 30 L104 36 L96 42" />
+      </svg>
+    );
+  }
+  if (type === "pinch") {
+    return (
+      <svg
+        viewBox="0 0 80 80"
+        width="64"
+        height="64"
+        fill="none"
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* palm */}
+        <path d="M22 50 Q22 38 30 36 L30 30 Q30 26 34 26 Q38 26 38 30 L38 34" />
+        <path d="M22 50 Q22 62 32 66 L50 66 Q58 66 58 58 L58 44" />
+        {/* curled fingers */}
+        <path d="M40 38 Q44 36 46 40 L46 44" />
+        <path d="M48 40 Q52 38 54 42 L54 46" />
+        <path d="M56 42 Q60 40 60 44 L60 48" />
+        {/* thumb meeting index — pinch */}
+        <path d="M30 30 Q26 22 30 16" />
+        <path d="M38 30 Q42 22 36 16" />
+        {/* contact point with spark */}
+        <circle cx="33" cy="14" r="2.2" />
+        <path d="M33 6 L33 9" opacity="0.7" />
+        <path d="M26 10 L28.5 12" opacity="0.7" />
+        <path d="M40 10 L37.5 12" opacity="0.7" />
+      </svg>
+    );
+  }
+  // drop — hand with fingers pointing down toward a dashed target strip
+  return (
+    <svg
+      viewBox="0 0 80 96"
+      width="62"
+      height="76"
+      fill="none"
+      stroke={stroke}
+      strokeWidth={sw}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <g transform="translate(24 2)">
+        {/* palm (rounded dome on top) */}
+        <path d="M2 18 Q2 -10 17 -10 Q32 -10 32 18" />
+        {/* fingers hanging down — varied lengths */}
+        <path d="M4 18 L4 30 Q4 34 7 34 Q10 34 10 30 L10 18" strokeWidth={2} />
+        <path d="M11 18 L11 38 Q11 42 14 42 Q17 42 17 38 L17 18" strokeWidth={2} />
+        <path d="M18 18 L18 36 Q18 40 21 40 Q24 40 24 36 L24 18" strokeWidth={2} />
+        <path d="M25 18 L25 28 Q25 32 27 32 Q29 32 29 28 L29 18" strokeWidth={2} />
+        {/* thumb curving out from upper-right */}
+        <path d="M32 10 Q42 12 44 2" strokeWidth={2} />
+        {/* knuckle crease */}
+        <path d="M6 4 Q16 0 28 4" opacity="0.45" />
+      </g>
+      {/* downward motion arrow */}
+      <path d="M40 58 L40 82 M32 74 L40 82 L48 74" />
+      {/* target strip */}
+      <path d="M8 92 L72 92" strokeDasharray="2 3" opacity="0.6" />
+    </svg>
   );
 }
 

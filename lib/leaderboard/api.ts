@@ -120,7 +120,17 @@ export async function submitScore(args: SubmitArgs): Promise<SubmitResult> {
 export async function fetchTop10(): Promise<LeaderboardRow[]> {
   const sb = getSupabase();
   if (!sb) return [];
-  const { data, error } = await sb.rpc("top_scores", { p_limit: 10 });
+  // Over-fetch so that after collapsing duplicate runs per player we can still
+  // surface a full top-10 of distinct names.
+  const { data, error } = await sb.rpc("top_scores", { p_limit: 50 });
   if (error || !Array.isArray(data)) return [];
-  return data as LeaderboardRow[];
+  const rows = data as LeaderboardRow[];
+  const seen = new Map<string, LeaderboardRow>();
+  for (const r of rows) {
+    const key = (r.name ?? "").toLowerCase();
+    if (!seen.has(key)) seen.set(key, r);
+  }
+  return Array.from(seen.values())
+    .slice(0, 10)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
 }

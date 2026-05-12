@@ -1,6 +1,7 @@
 import { SevenBag } from "./bag";
 import { LINE_SCORE, levelDropMs, levelFromLines } from "./scoring";
 import { COLORS, SHAPES } from "./shapes";
+import { playSfx } from "@/lib/audio/sfx";
 import {
   COLS,
   ROWS,
@@ -131,6 +132,7 @@ function lockPiece(state: GameState): void {
       state.grid[gy][gx] = p.type;
     }
   }
+  playSfx("lock");
 
   // Clear full lines
   const cleared: number[] = [];
@@ -151,6 +153,7 @@ function lockPiece(state: GameState): void {
     state.score += LINE_SCORE[cleared.length] * state.level;
     state.level = levelFromLines(state.lines);
     state.dropIntervalMs = levelDropMs(state.level);
+    playSfx(cleared.length >= 4 ? "clearBig" : "clear");
   }
   state.lastClearedRows = cleared;
   state.lastClearedCells = clearedCells;
@@ -175,6 +178,7 @@ export function tryRotate(state: GameState): void {
     if (isValid(state.grid, rotated, p.x + dx, p.y)) {
       p.shape = rotated;
       p.x += dx;
+      playSfx("rotate");
       return;
     }
   }
@@ -251,6 +255,7 @@ export function softDrop(state: GameState, scoreBonus = true): void {
   if (isValid(state.grid, p.shape, p.x, p.y + 1)) {
     p.y += 1;
     if (scoreBonus) state.score += 1;
+    playSfx("step");
   } else {
     lockPiece(state);
   }

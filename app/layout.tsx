@@ -17,6 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "HAND TETRIS",
   description: "Gesture-controlled Tetris. Pinch to rotate, tilt to steer.",
+  referrer: "strict-origin-when-cross-origin",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

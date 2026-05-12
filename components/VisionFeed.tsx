@@ -67,7 +67,9 @@ export const VisionFeed = forwardRef<VisionFeedHandle, VisionFeedProps>(
           setStatusBoth("ready");
           return { ok: true };
         } catch (err) {
-          console.error("[VisionFeed] boot failed", err);
+          if (process.env.NODE_ENV !== "production") {
+            console.error("[VisionFeed] boot failed", err);
+          }
           setStatusBoth("failed");
           const e = err as { name?: string; message?: string };
           let msg = e?.message ?? "unknown error";
@@ -88,31 +90,26 @@ export const VisionFeed = forwardRef<VisionFeedHandle, VisionFeedProps>(
           boxShadow: "inset 0 0 0 1px rgba(245,182,81,0.08)",
         }}
       >
-        {/* Inset wrapper that shrinks both the video and the overlay canvas
-            equally, so the live feed reads more "zoomed out" without breaking
-            the landmark <-> canvas coordinate mapping. */}
-        <div className="absolute inset-[6%]">
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            autoPlay
-            className="absolute inset-0 w-full h-full"
-            style={{ transform: "scaleX(-1)", objectFit: "contain" }}
-          />
-          <canvas
-            ref={overlayRef}
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            style={{ transform: "scaleX(-1)" }}
-          />
-        </div>
+        <video
+          ref={videoRef}
+          playsInline
+          muted
+          autoPlay
+          className="absolute inset-0 w-full h-full"
+          style={{ transform: "scaleX(-1)", objectFit: "cover" }}
+        />
+        <canvas
+          ref={overlayRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ transform: "scaleX(-1)" }}
+        />
 
-        {/* Subtle inner border accent (corners) */}
+        {/* Edge vignette so panel chrome blends in */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.55) 100%)",
+              "radial-gradient(ellipse at center, transparent 70%, rgba(0,0,0,0.4) 100%)",
           }}
         />
 

@@ -35,6 +35,7 @@ import {
   type StoredPlayer,
 } from "@/lib/leaderboard/local";
 import { leaderboardConfigured } from "@/lib/leaderboard/supabase";
+import { playSfx, unlockAudio } from "@/lib/audio/sfx";
 
 const Playfield3D = dynamic(
   () => import("@/components/Playfield3D").then((m) => m.Playfield3D),
@@ -48,6 +49,7 @@ export default function Home() {
   const visionRef = useRef<VisionFeedHandle>(null);
 
   const [mounted, setMounted] = useState(false);
+  const [vpBlocked, setVpBlocked] = useState(false);
   const [started, setStarted] = useState(false);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("init");
   const [score, setScore] = useState(0);
@@ -58,6 +60,7 @@ export default function Home() {
   /** True when the run ended via the QUIT button rather than a top-out. */
   const [endedManually, setEndedManually] = useState(false);
   const [runId, setRunId] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Leaderboard / player
   const [player, setPlayer] = useState<StoredPlayer | null>(null);
@@ -82,6 +85,23 @@ export default function Home() {
     setPersonalBest(loadBest());
     setPlayer(loadStoredPlayer());
     setMounted(true);
+  }, []);
+
+  // Lock the game to landscape laptops/tablets. Anything narrower than 900px
+  // or with portrait orientation gets the MobileGate instead.
+  useEffect(() => {
+    const check = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      setVpBlocked(w < 900 || h > w);
+    };
+    check();
+    window.addEventListener("resize", check);
+    window.addEventListener("orientationchange", check);
+    return () => {
+      window.removeEventListener("resize", check);
+      window.removeEventListener("orientationchange", check);
+    };
   }, []);
 
   const handleUiUpdate = useCallback((snap: UiSnapshot) => {
@@ -113,6 +133,10 @@ export default function Home() {
     if (!isOver) return;
     if (submittedRunRef.current === runId) return;
     submittedRunRef.current = runId;
+
+    // Sad descending melody for a natural top-out only — a manual quit
+    // already had its own UX, no need to pile on a defeat sound.
+    if (!endedManually) playSfx("gameOver");
 
     // Freeze the run duration on first game-over.
     runDurationRef.current = Math.max(
@@ -169,13 +193,16 @@ export default function Home() {
         });
       }
     })();
-  }, [isOver, runId, player, score, lines, level, refreshLeaderboard]);
+  }, [isOver, runId, player, score, lines, level, endedManually, refreshLeaderboard]);
 
   const handleStart = useCallback(
     async (
       mode: "camera" | "keyboard",
       registered: StoredPlayer,
     ): Promise<{ ok: boolean; error?: string }> => {
+      // Prime the audio pool under the start-click user gesture so engine
+      // sfx (rotate / step / line clear) can fire without browser blocks.
+      unlockAudio();
       setPlayer(registered);
       if (mode === "keyboard") return { ok: true };
       const result = await visionRef.current?.boot();
@@ -188,6 +215,7 @@ export default function Home() {
     runStartRef.current = performance.now();
     runDurationRef.current = 0;
     setStarted(true);
+    playSfx("start");
   }, []);
 
   const handleRestart = useCallback(() => {
@@ -199,6 +227,7 @@ export default function Home() {
     setQueue(fresh.queue.slice(0, 3));
     setIsOver(false);
     setEndedManually(false);
+    setIsPaused(false);
     setSubmission({ state: "idle" });
     setNewBest(false);
     runStartRef.current = performance.now();
@@ -210,10 +239,19 @@ export default function Home() {
   const handleQuit = useCallback(() => {
     const g = gameRef.current;
     if (!g || g.isOver) return;
+    playSfx("quit");
     g.isOver = true;
     setEndedManually(true);
+    setIsPaused(false);
     setIsOver(true);
   }, []);
+
+  const handlePauseToggle = useCallback(() => {
+    setIsPaused((p) => !p);
+    // Read `isPaused` from the closure snapshot — the callback is rebuilt on
+    // every change so this reflects the state *before* the toggle.
+    playSfx(isPaused ? "resume" : "pause");
+  }, [isPaused]);
 
   /** Return to the start screen — also clears the run. */
   const handleBackToMenu = useCallback(() => {
@@ -221,7 +259,34 @@ export default function Home() {
     setStarted(false);
   }, [handleRestart]);
 
-  const sessionRunning = started && !isOver;
+  const sessionRunning = started && !isOver && !isPaused;
+
+  if (mounted && vpBlocked) {
+    return <MobileGate />;
+  }
+
+  // Q quits, P toggles pause — only while a run is in progress.
+  useEffect(() => {
+    if (!started || isOver) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "q") {
+        e.preventDefault();
+        handleQuit();
+      } else if (k === "p" && !isPaused) {
+        e.preventDefault();
+        handlePauseToggle();
+      } else if (k === "r" && isPaused) {
+        e.preventDefault();
+        handlePauseToggle();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [started, isOver, isPaused, handleQuit, handlePauseToggle]);
 
   return (
     <div
@@ -241,7 +306,7 @@ export default function Home() {
             className="font-mono text-[9px] uppercase tracking-[0.22em]"
             style={{ color: "var(--ink-dim)" }}
           >
-            v1 · gesture mode
+            gesture mode
           </span>
         </div>
         <div className="flex items-center gap-5 flex-wrap">
@@ -267,35 +332,64 @@ export default function Home() {
           <CamBadge status={cameraStatus} />
           <SessionTimer running={sessionRunning} resetKey={runId} />
           {started && !isOver && (
-            <button
-              type="button"
-              onClick={handleQuit}
-              title="End the current run"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[2px] border-2 font-display text-[11px] tracking-[0.24em] transition-all duration-150"
-              style={{
-                borderColor: "var(--accent-hot)",
-                color: "#fff",
-                background:
-                  "linear-gradient(180deg, var(--accent-hot), #d8451c)",
-                boxShadow:
-                  "0 0 18px rgba(255, 120, 73, 0.55), inset 0 -2px 0 rgba(0,0,0,0.25)",
-                textShadow: "0 1px 0 rgba(0,0,0,0.35)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  "linear-gradient(180deg, #ff8a5a, var(--accent-hot))";
-                e.currentTarget.style.boxShadow =
-                  "0 0 28px rgba(255, 120, 73, 0.85), inset 0 -2px 0 rgba(0,0,0,0.25)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background =
-                  "linear-gradient(180deg, var(--accent-hot), #d8451c)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 18px rgba(255, 120, 73, 0.55), inset 0 -2px 0 rgba(0,0,0,0.25)";
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>✕</span> QUIT
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePauseToggle}
+                title={isPaused ? "Resume the run (R)" : "Pause the run (P)"}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-[2px] border-2 font-display text-[11px] tracking-[0.24em] transition-all duration-150"
+                style={{
+                  borderColor: "var(--accent)",
+                  color: "#1a1108",
+                  background: isPaused
+                    ? "linear-gradient(180deg, #ffd28a, var(--accent))"
+                    : "linear-gradient(180deg, var(--accent), #d99339)",
+                  boxShadow:
+                    "0 0 18px rgba(245, 182, 81, 0.5), inset 0 -2px 0 rgba(0,0,0,0.25)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 0 28px rgba(245, 182, 81, 0.8), inset 0 -2px 0 rgba(0,0,0,0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 0 18px rgba(245, 182, 81, 0.5), inset 0 -2px 0 rgba(0,0,0,0.25)";
+                }}
+              >
+                <KeyBadge letter={isPaused ? "R" : "P"} tone="dark" />
+                {isPaused ? "RESUME" : "PAUSE"}
+              </button>
+              <button
+                type="button"
+                onClick={handleQuit}
+                title="End the current run (Q)"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-[2px] border-2 font-display text-[11px] tracking-[0.24em] transition-all duration-150"
+                style={{
+                  borderColor: "var(--accent-hot)",
+                  color: "#fff",
+                  background:
+                    "linear-gradient(180deg, var(--accent-hot), #d8451c)",
+                  boxShadow:
+                    "0 0 18px rgba(255, 120, 73, 0.55), inset 0 -2px 0 rgba(0,0,0,0.25)",
+                  textShadow: "0 1px 0 rgba(0,0,0,0.35)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background =
+                    "linear-gradient(180deg, #ff8a5a, var(--accent-hot))";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 28px rgba(255, 120, 73, 0.85), inset 0 -2px 0 rgba(0,0,0,0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background =
+                    "linear-gradient(180deg, var(--accent-hot), #d8451c)";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 18px rgba(255, 120, 73, 0.55), inset 0 -2px 0 rgba(0,0,0,0.25)";
+                }}
+              >
+                <KeyBadge letter="Q" tone="light" />
+                QUIT
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -316,7 +410,7 @@ export default function Home() {
                 gestureRef={gestureRef}
                 movementFreezeUntilRef={movementFreezeUntilRef}
                 onUiUpdate={handleUiUpdate}
-                paused={!started}
+                paused={!started || isPaused}
               />
             )}
             <div
@@ -339,6 +433,30 @@ export default function Home() {
                 {level}
               </span>
             </div>
+            {isPaused && started && !isOver && (
+              <div
+                className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                style={{ background: "rgba(14,10,20,0.6)", backdropFilter: "blur(2px)" }}
+              >
+                <div className="text-center">
+                  <div
+                    className="font-display tracking-[0.34em] text-3xl mb-2"
+                    style={{
+                      color: "var(--accent)",
+                      textShadow: "0 0 24px rgba(245,182,81,0.6)",
+                    }}
+                  >
+                    PAUSED
+                  </div>
+                  <div
+                    className="font-mono text-[10px] uppercase tracking-[0.22em]"
+                    style={{ color: "var(--ink-dim)" }}
+                  >
+                    press <KeyBadge letter="R" tone="light" /> to resume
+                  </div>
+                </div>
+              </div>
+            )}
             <div
               className="pointer-events-none absolute top-2 right-2 px-2 py-1 rounded-[2px]"
               style={{
@@ -362,7 +480,7 @@ export default function Home() {
           </div>
         </PanelFrame>
 
-        <div className="grid gap-3 md:gap-4 grid-rows-[auto_1fr] min-h-0">
+        <div className="grid gap-3 md:gap-4 grid-rows-2 min-h-0">
           <ScorePanel
             score={score}
             lines={lines}
@@ -423,6 +541,134 @@ export default function Home() {
         endedManually={endedManually}
       />
     </div>
+  );
+}
+
+function MobileGate() {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6 text-center"
+      style={{ background: "#000" }}
+    >
+      <div
+        className="font-display text-[10px] tracking-[0.32em] mb-3"
+        style={{ color: "var(--accent)" }}
+      >
+        ─── wrong stage ───
+      </div>
+      <h1
+        className="font-display tracking-[0.18em] leading-[0.95] mb-3"
+        style={{
+          color: "var(--ink)",
+          fontSize: "clamp(34px, 9vw, 56px)",
+        }}
+      >
+        HAND
+        <br />
+        <span
+          style={{
+            color: "var(--accent)",
+            textShadow: "0 0 20px rgba(245,182,81,0.35)",
+          }}
+        >
+          TETRIS
+        </span>
+      </h1>
+
+      <RotateDeviceAnimation />
+
+      <h2
+        className="font-display tracking-[0.22em] text-base md:text-lg mt-5 mb-2"
+        style={{ color: "var(--accent)" }}
+      >
+        GO WIDE, PILOT
+      </h2>
+      <p
+        className="font-mono text-[10px] uppercase tracking-[0.22em] leading-relaxed max-w-[300px]"
+        style={{ color: "var(--ink-dim)" }}
+      >
+        hand tetris needs elbow room.
+        <br />
+        flip your tablet to landscape
+        <br />
+        — or hop onto a laptop.
+      </p>
+
+      <div
+        className="font-mono text-[9px] uppercase tracking-[0.22em] mt-6"
+        style={{ color: "var(--panel-border-strong)" }}
+      >
+        min ░ 900 px wide · landscape only
+      </div>
+    </div>
+  );
+}
+
+function RotateDeviceAnimation() {
+  return (
+    <div className="relative w-36 h-36 my-2 flex items-center justify-center">
+      <svg
+        viewBox="0 0 120 120"
+        className="w-full h-full"
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* Curved rotation arc — hints the motion */}
+        <path
+          d="M 22 60 A 38 38 0 0 1 98 60"
+          strokeDasharray="3 4"
+          opacity="0.5"
+        />
+        <path d="M 92 53 L 98 60 L 92 67" opacity="0.5" />
+
+        {/* Device (rotates via CSS keyframe) */}
+        <g
+          className="tetris-rotate-device"
+          style={{ transformOrigin: "60px 60px" }}
+        >
+          <rect x="45" y="32" width="30" height="56" rx="4" />
+          <line x1="56" y1="83" x2="64" y2="83" strokeWidth="1.2" />
+          {/* tiny tetris piece on screen for flavor */}
+          <rect x="51" y="44" width="6" height="6" opacity="0.6" />
+          <rect x="57" y="44" width="6" height="6" opacity="0.6" />
+          <rect x="63" y="44" width="6" height="6" opacity="0.6" />
+          <rect x="57" y="50" width="6" height="6" opacity="0.6" />
+        </g>
+      </svg>
+      <style>{`
+        .tetris-rotate-device {
+          animation: tetris-rotate-device 3.4s ease-in-out infinite;
+        }
+        @keyframes tetris-rotate-device {
+          0%, 22% { transform: rotate(0deg); }
+          38%, 72% { transform: rotate(-90deg); }
+          88%, 100% { transform: rotate(0deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function KeyBadge({ letter, tone }: { letter: string; tone: "light" | "dark" }) {
+  const isDark = tone === "dark";
+  return (
+    <span
+      className="inline-flex items-center justify-center font-mono leading-none"
+      style={{
+        width: 16,
+        height: 16,
+        fontSize: 9,
+        borderRadius: 2,
+        border: `1px solid ${isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.7)"}`,
+        background: isDark ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)",
+        color: isDark ? "#1a1108" : "#fff",
+      }}
+    >
+      {letter}
+    </span>
   );
 }
 

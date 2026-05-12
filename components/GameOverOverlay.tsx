@@ -55,8 +55,8 @@ export function GameOverOverlay({
           transition={{ duration: 0.25 }}
           className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto"
           style={{
-            background: "rgba(14,10,20,0.78)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(14,10,20,0.9)",
+            backdropFilter: "blur(24px)",
           }}
         >
           <motion.div
