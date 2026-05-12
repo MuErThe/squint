@@ -71,7 +71,8 @@ create or replace function public.reserve_name(p_name text)
 returns text
 language plpgsql
 security definer
-set search_path = public
+-- `extensions` is on the path so we can call gen_random_bytes (pgcrypto).
+set search_path = public, extensions
 as $$
 declare
   v_token text;
