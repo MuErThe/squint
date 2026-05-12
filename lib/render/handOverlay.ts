@@ -39,10 +39,23 @@ export function createOverlayState(): OverlayDotState {
   };
 }
 
+/**
+ * Rectangle on the canvas where the video is actually rendered. Lets us
+ * letterbox via `object-fit: contain` without misaligning landmarks.
+ */
+export interface VideoRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 interface DrawArgs {
   ctx: CanvasRenderingContext2D;
   width: number;
   height: number;
+  /** The visible video rect inside the canvas (may be letterboxed). */
+  videoRect: VideoRect;
   landmarks: HandLandmark[] | null;
   normalizedPinch: number;
   dropZoneActive: boolean;
@@ -54,6 +67,7 @@ export function drawHandOverlay({
   ctx,
   width,
   height,
+  videoRect,
   landmarks,
   normalizedPinch,
   dropZoneActive,
@@ -62,14 +76,16 @@ export function drawHandOverlay({
 }: DrawArgs) {
   ctx.clearRect(0, 0, width, height);
 
-  // Drop zone dashed line at y = 0.70
+  // Drop zone dashed line at y = 0.70 OF THE VIDEO rect, not the canvas.
+  // (Landmark y is normalised to the video frame.)
+  const dropY = videoRect.y + videoRect.h * 0.7;
   ctx.save();
   ctx.setLineDash([8, 8]);
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = dropZoneActive ? THEME.accentHot : THEME.inkFaint;
   ctx.beginPath();
-  ctx.moveTo(0, height * 0.7);
-  ctx.lineTo(width, height * 0.7);
+  ctx.moveTo(videoRect.x, dropY);
+  ctx.lineTo(videoRect.x + videoRect.w, dropY);
   ctx.stroke();
   ctx.restore();
 
@@ -82,9 +98,12 @@ export function drawHandOverlay({
     return;
   }
 
-  // Compute pixel positions
+  // Compute pixel positions inside the visible video rect.
   const pts = landmarks
-    ? landmarks.map((l) => ({ x: l.x * width, y: l.y * height }))
+    ? landmarks.map((l) => ({
+        x: videoRect.x + l.x * videoRect.w,
+        y: videoRect.y + l.y * videoRect.h,
+      }))
     : null;
 
   if (pts) {

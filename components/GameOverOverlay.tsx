@@ -24,6 +24,10 @@ interface GameOverOverlayProps {
   leaderboard: LeaderboardRow[];
   loadingLeaderboard: boolean;
   onRestart: () => void;
+  /** Optional — when given, renders a secondary "BACK TO MENU" action. */
+  onBackToMenu?: () => void;
+  /** When true, the modal header reads "RUN ENDED" instead of "GAME OVER". */
+  endedManually?: boolean;
 }
 
 export function GameOverOverlay({
@@ -38,6 +42,8 @@ export function GameOverOverlay({
   leaderboard,
   loadingLeaderboard,
   onRestart,
+  onBackToMenu,
+  endedManually = false,
 }: GameOverOverlayProps) {
   return (
     <AnimatePresence>
@@ -72,8 +78,14 @@ export function GameOverOverlay({
                 background: "rgba(255,120,73,0.08)",
               }}
             >
-              <span>─── stack overflow ───</span>
-              <span style={{ color: "var(--ink-dim)" }}>terminated</span>
+              <span>
+                {endedManually
+                  ? "─── ejected · run ended ───"
+                  : "─── stack overflow ───"}
+              </span>
+              <span style={{ color: "var(--ink-dim)" }}>
+                {endedManually ? "stopped" : "terminated"}
+              </span>
             </div>
 
             <div className="px-6 py-6 text-center">
@@ -88,7 +100,7 @@ export function GameOverOverlay({
                   textShadow: "0 0 16px rgba(255,120,73,0.55)",
                 }}
               >
-                GAME OVER
+                {endedManually ? "RUN ENDED" : "GAME OVER"}
               </motion.h2>
               <div
                 className="font-mono text-[10px] uppercase tracking-[0.22em] mb-1"
@@ -139,18 +151,29 @@ export function GameOverOverlay({
                 />
               </div>
 
-              <button
-                onClick={onRestart}
-                className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.22)]"
-                style={{
-                  borderColor: "var(--accent)",
-                  color: "var(--accent)",
-                  background: "rgba(245, 182, 81, 0.1)",
-                  boxShadow: "0 0 20px rgba(245, 182, 81, 0.15)",
-                }}
-              >
-                ↻ INSERT COIN
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={onRestart}
+                  className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.22)]"
+                  style={{
+                    borderColor: "var(--accent)",
+                    color: "var(--accent)",
+                    background: "rgba(245, 182, 81, 0.1)",
+                    boxShadow: "0 0 20px rgba(245, 182, 81, 0.15)",
+                  }}
+                >
+                  ↻ INSERT COIN
+                </button>
+                {onBackToMenu && (
+                  <button
+                    onClick={onBackToMenu}
+                    className="font-mono uppercase tracking-[0.22em] text-[11px] px-6 py-2 w-full transition-colors hover:text-[var(--ink)]"
+                    style={{ color: "var(--ink-dim)" }}
+                  >
+                    ← back to menu
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </motion.div>

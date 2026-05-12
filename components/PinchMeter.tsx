@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GestureState } from "@/lib/hand/types";
+import { COLS } from "@/lib/tetris/types";
 
 interface PinchMeterProps {
   gestureRef: React.MutableRefObject<GestureState>;
@@ -75,7 +76,7 @@ export function PinchMeter({ gestureRef }: PinchMeterProps) {
         </div>
       </div>
 
-      {/* Column indicator — 10 ticks */}
+      {/* Column indicator — one tick per playfield column */}
       <div className="flex flex-col flex-1 gap-1">
         <div className="flex items-center justify-between">
           <span
@@ -91,8 +92,8 @@ export function PinchMeter({ gestureRef }: PinchMeterProps) {
             {String(col).padStart(2, "0")}
           </span>
         </div>
-        <div className="flex gap-[3px]">
-          {Array.from({ length: 10 }, (_, i) => (
+        <div className="flex gap-[2px]">
+          {Array.from({ length: COLS }, (_, i) => (
             <div
               key={i}
               className="flex-1 transition-colors duration-100 rounded-[1px]"

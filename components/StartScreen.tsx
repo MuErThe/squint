@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { reserveName } from "@/lib/leaderboard/api";
+import { LeaderboardModal } from "./LeaderboardModal";
 import { leaderboardConfigured } from "@/lib/leaderboard/supabase";
 import {
   loadStoredPlayer,
@@ -37,6 +38,8 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
   const [busy, setBusy] = useState(false);
   const [busyReason, setBusyReason] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   const lbOnline = leaderboardConfigured();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -158,7 +161,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-40 flex items-center justify-center px-6"
+          className="fixed inset-0 z-40 flex items-start md:items-center justify-center px-6 py-6 overflow-y-auto"
           style={{
             background: "rgba(14,10,20,0.78)",
             backdropFilter: "blur(4px)",
@@ -169,7 +172,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 10, opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="panel-bg relative rounded-[2px] border max-w-[560px] w-full overflow-hidden"
+            className="panel-bg relative rounded-[2px] border max-w-[560px] w-full overflow-hidden my-auto"
             style={{
               borderColor: "var(--panel-border-strong)",
               boxShadow: "0 24px 60px rgba(0,0,0,0.55)",
@@ -182,13 +185,13 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
 
             <div className="px-8 md:px-10 py-7">
               <div
-                className="font-display text-[10px] tracking-[0.32em] mb-3"
+                className="font-display text-[10px] tracking-[0.32em] mb-3 text-center"
                 style={{ color: "var(--accent)" }}
               >
                 ─── insert hand to continue ───
               </div>
               <h1
-                className="font-display tracking-[0.18em] leading-[0.95] mb-4"
+                className="font-display tracking-[0.18em] leading-[0.95] mb-5 text-center"
                 style={{
                   color: "var(--ink)",
                   fontSize: "clamp(38px, 8vw, 56px)",
@@ -289,12 +292,77 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                 )}
               </div>
 
-              {/* Compact control hints */}
-              <div className="grid grid-cols-3 gap-2 mb-5">
-                <ControlHint num="01" title="STEER" body="hand → left / right" />
-                <ControlHint num="02" title="PINCH" body="thumb → index" />
-                <ControlHint num="03" title="DROP" body="hand → low" />
+              {/* Secondary links — kept small so the START button stays the
+                  primary call-to-action. */}
+              <div className="flex items-center justify-center gap-4 mb-3 font-mono text-[10px] uppercase tracking-[0.22em]">
+                <button
+                  type="button"
+                  onClick={() => setRulesOpen((o) => !o)}
+                  className="transition-colors flex items-center gap-1"
+                  style={{ color: rulesOpen ? "var(--accent)" : "var(--ink-dim)" }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--accent)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = rulesOpen
+                      ? "var(--accent)"
+                      : "var(--ink-dim)")
+                  }
+                >
+                  <span>{rulesOpen ? "▾" : "▸"}</span>
+                  {rulesOpen ? "hide rules" : "show rules"}
+                </button>
+                {lbOnline && (
+                  <>
+                    <span style={{ color: "var(--panel-border-strong)" }}>·</span>
+                    <button
+                      type="button"
+                      onClick={() => setBoardOpen(true)}
+                      className="transition-colors flex items-center gap-1.5"
+                      style={{ color: "var(--ink-dim)" }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = "var(--accent)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = "var(--ink-dim)")
+                      }
+                    >
+                      <span style={{ fontSize: 12 }}>🏆</span>
+                      view leaderboard
+                    </button>
+                  </>
+                )}
               </div>
+              <AnimatePresence initial={false}>
+                {rulesOpen && (
+                  <motion.div
+                    key="rules"
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <ControlHint
+                        num="01"
+                        title="STEER"
+                        body="move your hand left or right to slide the falling tetromino"
+                      />
+                      <ControlHint
+                        num="02"
+                        title="PINCH TO ROTATE"
+                        body="touch thumb to index — each pinch rotates the piece 90°"
+                      />
+                      <ControlHint
+                        num="03"
+                        title="DROP"
+                        body="lower your hand into the bottom strip to fast-fall"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {error && (
                 <div
@@ -337,17 +405,21 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
             </div>
 
             <div
-              className="px-8 md:px-10 py-3 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.22em] border-t"
+              className="px-8 md:px-10 py-3 font-mono text-[9px] uppercase tracking-[0.22em] border-t text-center"
               style={{
                 borderColor: "var(--panel-border)",
                 color: "var(--ink-dim)",
                 background: "rgba(0,0,0,0.25)",
               }}
             >
-              <span>← → move · ↑ rotate · ↓ soft · space hard</span>
-              <span style={{ color: "var(--accent)" }}>v1.0</span>
+              ← → move · ↑ rotate · ↓ soft · space hard
             </div>
           </motion.div>
+          <LeaderboardModal
+            show={boardOpen}
+            onClose={() => setBoardOpen(false)}
+            highlightName={stored?.name ?? null}
+          />
         </motion.div>
       )}
     </AnimatePresence>

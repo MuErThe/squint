@@ -2,10 +2,12 @@
 
 import type { Results } from "@mediapipe/hands";
 import type { GestureState, HandLandmark } from "./types";
+import { COLS } from "../tetris/types";
 import {
   createOverlayState,
   drawHandOverlay,
   type OverlayDotState,
+  type VideoRect,
 } from "../render/handOverlay";
 
 // ----- Tunables -----
@@ -52,12 +54,15 @@ export function onHandResults(
   g.smoothedX =
     g.smoothedX * (1 - SMOOTHING_ALPHA) + mirroredX * SMOOTHING_ALPHA;
 
-  const rawColumn = clamp(g.smoothedX * 10, 0, 9.999);
+  const rawColumn = clamp(g.smoothedX * COLS, 0, COLS - 0.001);
   // Hysteresis: only commit a new integer column when we drift past the band.
   if (Math.abs(rawColumn - g.currentColumnFloat) > COLUMN_HYSTERESIS) {
     g.currentColumnFloat = rawColumn;
   }
-  g.targetColumn = Math.max(0, Math.min(9, Math.floor(g.currentColumnFloat)));
+  g.targetColumn = Math.max(
+    0,
+    Math.min(COLS - 1, Math.floor(g.currentColumnFloat)),
+  );
 
   // ---- Pinch (3D, hand-size-normalised) ----
   const thumbTip = lm[4];
@@ -127,10 +132,17 @@ export function attachOverlayLoop(
     if (stopped) return;
     const rect = canvas.getBoundingClientRect();
     const g = gestureRef.current;
+    const videoRect = computeVideoRect(
+      rect.width,
+      rect.height,
+      video.videoWidth,
+      video.videoHeight,
+    );
     drawHandOverlay({
       ctx,
       width: rect.width,
       height: rect.height,
+      videoRect,
       landmarks: g.rawLandmarks,
       normalizedPinch: g.normalizedPinch,
       dropZoneActive: g.dropZoneActive,
@@ -159,4 +171,30 @@ function distance3(a: HandLandmark, b: HandLandmark): number {
 
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
+}
+
+/**
+ * Letterbox calculation matching `object-fit: contain`. Returns the visible
+ * rect of the video inside a (cw, ch)-sized canvas given the intrinsic video
+ * dimensions (vw, vh). Falls back to the full canvas while metadata is loading.
+ */
+function computeVideoRect(
+  cw: number,
+  ch: number,
+  vw: number,
+  vh: number,
+): VideoRect {
+  if (!vw || !vh) return { x: 0, y: 0, w: cw, h: ch };
+  const videoAspect = vw / vh;
+  const canvasAspect = cw / ch;
+  if (videoAspect > canvasAspect) {
+    // wider than canvas → letterbox top/bottom
+    const w = cw;
+    const h = cw / videoAspect;
+    return { x: 0, y: (ch - h) / 2, w, h };
+  }
+  // taller than canvas → letterbox left/right
+  const h = ch;
+  const w = ch * videoAspect;
+  return { x: (cw - w) / 2, y: 0, w, h };
 }

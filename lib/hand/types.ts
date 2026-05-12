@@ -4,10 +4,12 @@ export interface HandLandmark {
   z?: number;
 }
 
+import { COLS } from "../tetris/types";
+
 export interface GestureState {
   handVisible: boolean;
   smoothedX: number; // 0..1, mirrored to match visual
-  targetColumn: number; // 0..9
+  targetColumn: number; // 0..COLS-1
   currentColumnFloat: number; // float column post-hysteresis
   pinchActive: boolean;
   pinchRisingEdge: boolean;
@@ -18,11 +20,12 @@ export interface GestureState {
 }
 
 export function initialGestureState(): GestureState {
+  const mid = Math.floor(COLS / 2);
   return {
     handVisible: false,
     smoothedX: 0.5,
-    targetColumn: 4,
-    currentColumnFloat: 4,
+    targetColumn: mid,
+    currentColumnFloat: mid,
     pinchActive: false,
     pinchRisingEdge: false,
     dropZoneActive: false,

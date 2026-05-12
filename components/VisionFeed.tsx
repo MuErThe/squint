@@ -88,21 +88,24 @@ export const VisionFeed = forwardRef<VisionFeedHandle, VisionFeedProps>(
           boxShadow: "inset 0 0 0 1px rgba(245,182,81,0.08)",
         }}
       >
-        {/* Mirrored video */}
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ transform: "scaleX(-1)" }}
-        />
-        {/* Mirrored overlay canvas */}
-        <canvas
-          ref={overlayRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ transform: "scaleX(-1)" }}
-        />
+        {/* Inset wrapper that shrinks both the video and the overlay canvas
+            equally, so the live feed reads more "zoomed out" without breaking
+            the landmark <-> canvas coordinate mapping. */}
+        <div className="absolute inset-[6%]">
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            autoPlay
+            className="absolute inset-0 w-full h-full"
+            style={{ transform: "scaleX(-1)", objectFit: "contain" }}
+          />
+          <canvas
+            ref={overlayRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ transform: "scaleX(-1)" }}
+          />
+        </div>
 
         {/* Subtle inner border accent (corners) */}
         <div

@@ -45,13 +45,35 @@ function cellToWorld(col: number, row: number, out: Vector3): Vector3 {
   return out;
 }
 
-interface FadingEffect {
-  cells: { col: number; row: number; type: PieceType }[];
-  start: number; // performance.now() at start
+/** A single tumbling block left behind by a line clear. */
+interface CrumbleShard {
+  type: PieceType;
+  // world position
+  x: number;
+  y: number;
+  z: number;
+  // velocity (units per second)
+  vx: number;
+  vy: number;
+  vz: number;
+  // rotation (radians)
+  rx: number;
+  ry: number;
+  rz: number;
+  // angular velocity (rad/sec)
+  arx: number;
+  ary: number;
+  arz: number;
 }
 
-const EFFECT_MS = 280;
-const FX_CAP = COLS * 4; // up to a 4-line clear
+interface FadingEffect {
+  shards: CrumbleShard[];
+  start: number;
+}
+
+const EFFECT_MS = 750;
+const CRUMBLE_GRAVITY = 22; // visual units per second^2 (downward)
+const FX_CAP = COLS * 4; // up to a 4-line clear at 16 cols = 64 shards
 
 function PlayfieldScene({
   gameRef,
@@ -167,61 +189,91 @@ function PlayfieldScene({
     ghost.count = 16;
     ghost.instanceMatrix.needsUpdate = true;
 
-    // ----- Line-clear effects -----
-    // Capture newly-cleared rows when lockTick advances.
+    // ----- Line-clear "crumble" effect -----
+    // When the engine reports new lockTick + clearedRows, spawn one tumbling
+    // shard per cleared cell with randomised velocity + spin.
     if (s.lockTick !== lastSeenLockTickRef.current) {
       lastSeenLockTickRef.current = s.lockTick;
       if (s.lastClearedRows.length > 0) {
-        const cells: { col: number; row: number; type: PieceType }[] = [];
+        const shards: CrumbleShard[] = [];
         for (let k = 0; k < s.lastClearedRows.length; k++) {
           const rowIdx = s.lastClearedRows[k];
           const rowCells = s.lastClearedCells[k] ?? [];
           for (let c = 0; c < COLS; c++) {
             const t = rowCells[c] as Cell;
-            if (t) cells.push({ col: c, row: rowIdx, type: t });
+            if (!t) continue;
+            const wx = c - (COLS - 1) / 2;
+            const wy = (ROWS - 1) / 2 - rowIdx;
+            shards.push({
+              type: t,
+              x: wx,
+              y: wy,
+              z: 0,
+              // Lateral kick — symmetric outward bias from the row center.
+              vx: (wx >= 0 ? 1 : -1) * (1 + Math.random() * 2.5),
+              // Pop upward then fall under gravity.
+              vy: 1.5 + Math.random() * 2.5,
+              // Toward / away from camera for a touch of depth.
+              vz: (Math.random() - 0.5) * 3,
+              rx: 0,
+              ry: 0,
+              rz: 0,
+              arx: (Math.random() - 0.5) * 7,
+              ary: (Math.random() - 0.5) * 7,
+              arz: (Math.random() - 0.5) * 7,
+            });
           }
         }
-        if (cells.length > 0) {
-          effectsRef.current.push({ cells, start: performance.now() });
+        if (shards.length > 0) {
+          effectsRef.current.push({ shards, start: performance.now() });
         }
       }
     }
 
-    // Render fading effect blocks
+    // Integrate physics + render shards.
     const fx = fxMeshRef.current;
     if (fx) {
       const fxMat = fx.material as MeshStandardMaterial;
       let fxn = 0;
       const now = performance.now();
       const stillAlive: FadingEffect[] = [];
-      let aliveScale = 1;
-      let aliveOpacity = 1;
+      let aliveOpacity = 0;
       for (const e of effectsRef.current) {
-        const t = (now - e.start) / EFFECT_MS;
+        const ageMs = now - e.start;
+        const t = ageMs / EFFECT_MS;
         if (t >= 1) continue;
-        // Ease out: scale 1 -> 1.2, opacity 1 -> 0
-        const scale = 1 + t * 0.2;
-        const opacity = 1 - t;
-        aliveScale = scale;
-        aliveOpacity = opacity;
-        for (const cell of e.cells) {
+        // Integrate motion using the frame delta in seconds.
+        for (const sh of e.shards) {
+          sh.x += sh.vx * delta;
+          sh.y += sh.vy * delta;
+          sh.z += sh.vz * delta;
+          sh.vy -= CRUMBLE_GRAVITY * delta;
+          sh.rx += sh.arx * delta;
+          sh.ry += sh.ary * delta;
+          sh.rz += sh.arz * delta;
+        }
+        // Shrink + fade. Ease-out for a snappier disintegration.
+        const easeOut = 1 - (1 - t) * (1 - t);
+        const scale = Math.max(0, 1 - easeOut * 0.55);
+        const opacity = 1 - easeOut;
+        // Track the most opaque alive effect — the shared material can only
+        // hold one alpha value, so we use the loudest. Visually fine because
+        // overlapping effects are rare.
+        if (opacity > aliveOpacity) aliveOpacity = opacity;
+        for (const sh of e.shards) {
           if (fxn >= FX_CAP) break;
-          cellToWorld(cell.col, cell.row, tmpVec);
-          tmpObj.position.copy(tmpVec);
-          tmpObj.rotation.set(0, 0, 0);
+          tmpObj.position.set(sh.x, sh.y, sh.z);
+          tmpObj.rotation.set(sh.rx, sh.ry, sh.rz);
           tmpObj.scale.set(scale, scale, scale);
           tmpObj.updateMatrix();
           fx.setMatrixAt(fxn, tmpObj.matrix);
-          fx.setColorAt(fxn, tmpColor.set(PIECE_COLORS_HEX[cell.type]));
+          fx.setColorAt(fxn, tmpColor.set(PIECE_COLORS_HEX[sh.type]));
           fxn += 1;
         }
         stillAlive.push(e);
       }
       effectsRef.current = stillAlive;
-      // Average opacity across overlapping effects — simplest is to use the
-      // most-recent effect's opacity since materials are shared.
       fxMat.opacity = stillAlive.length === 0 ? 0 : aliveOpacity;
-      void aliveScale; // referenced via setMatrixAt
       for (let i = fxn; i < FX_CAP; i++) {
         fx.setMatrixAt(i, tmpMatrix.makeScale(0, 0, 0));
       }
@@ -322,20 +374,20 @@ function PlayfieldScene({
         />
       </instancedMesh>
 
-      {/* Line-clear FX (fading, slightly emissive) */}
+      {/* Line-clear crumble FX */}
       <instancedMesh
         ref={fxMeshRef}
         args={[undefined, undefined, FX_CAP]}
         frustumCulled={false}
       >
-        <boxGeometry args={[BOX, BOX, BOX]} />
+        <boxGeometry args={[BOX * 0.85, BOX * 0.85, BOX * 0.85]} />
         <meshStandardMaterial
           transparent
           opacity={0}
           emissive={"#f5b651"}
-          emissiveIntensity={0.4}
+          emissiveIntensity={0.55}
           metalness={0.0}
-          roughness={0.5}
+          roughness={0.55}
         />
       </instancedMesh>
     </>

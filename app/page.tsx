@@ -55,6 +55,8 @@ export default function Home() {
   const [level, setLevel] = useState(1);
   const [queue, setQueue] = useState<PieceType[]>([]);
   const [isOver, setIsOver] = useState(false);
+  /** True when the run ended via the QUIT button rather than a top-out. */
+  const [endedManually, setEndedManually] = useState(false);
   const [runId, setRunId] = useState(0);
 
   // Leaderboard / player
@@ -196,12 +198,28 @@ export default function Home() {
     setLevel(1);
     setQueue(fresh.queue.slice(0, 3));
     setIsOver(false);
+    setEndedManually(false);
     setSubmission({ state: "idle" });
     setNewBest(false);
     runStartRef.current = performance.now();
     runDurationRef.current = 0;
     setRunId((n) => n + 1);
   }, []);
+
+  /** End the current run on demand. Falls through to the normal game-over flow. */
+  const handleQuit = useCallback(() => {
+    const g = gameRef.current;
+    if (!g || g.isOver) return;
+    g.isOver = true;
+    setEndedManually(true);
+    setIsOver(true);
+  }, []);
+
+  /** Return to the start screen — also clears the run. */
+  const handleBackToMenu = useCallback(() => {
+    handleRestart();
+    setStarted(false);
+  }, [handleRestart]);
 
   const sessionRunning = started && !isOver;
 
@@ -248,6 +266,37 @@ export default function Home() {
           )}
           <CamBadge status={cameraStatus} />
           <SessionTimer running={sessionRunning} resetKey={runId} />
+          {started && !isOver && (
+            <button
+              type="button"
+              onClick={handleQuit}
+              title="End the current run"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[2px] border-2 font-display text-[11px] tracking-[0.24em] transition-all duration-150"
+              style={{
+                borderColor: "var(--accent-hot)",
+                color: "#fff",
+                background:
+                  "linear-gradient(180deg, var(--accent-hot), #d8451c)",
+                boxShadow:
+                  "0 0 18px rgba(255, 120, 73, 0.55), inset 0 -2px 0 rgba(0,0,0,0.25)",
+                textShadow: "0 1px 0 rgba(0,0,0,0.35)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background =
+                  "linear-gradient(180deg, #ff8a5a, var(--accent-hot))";
+                e.currentTarget.style.boxShadow =
+                  "0 0 28px rgba(255, 120, 73, 0.85), inset 0 -2px 0 rgba(0,0,0,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background =
+                  "linear-gradient(180deg, var(--accent-hot), #d8451c)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 18px rgba(255, 120, 73, 0.55), inset 0 -2px 0 rgba(0,0,0,0.25)";
+              }}
+            >
+              <span style={{ fontSize: 13, lineHeight: 1 }}>✕</span> QUIT
+            </button>
+          )}
         </div>
       </header>
 
@@ -370,6 +419,8 @@ export default function Home() {
         leaderboard={leaderboard}
         loadingLeaderboard={loadingLeaderboard}
         onRestart={handleRestart}
+        onBackToMenu={handleBackToMenu}
+        endedManually={endedManually}
       />
     </div>
   );

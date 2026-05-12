@@ -39,8 +39,12 @@ export async function bootHandTracker(
     onFrame: async () => {
       await hands.send({ image: video });
     },
-    width: 640,
-    height: 480,
+    // 1280×720 is the most common 16:9 webcam mode and gives roughly twice
+    // the horizontal area of 640×480, so the player can move further out
+    // before falling off-frame. Cameras that can't deliver it gracefully
+    // negotiate down.
+    width: 1280,
+    height: 720,
     facingMode: "user",
   });
 
