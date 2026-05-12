@@ -27,5 +27,5 @@ export interface GameState {
   lockTick: number;
 }
 
-export const COLS = 16;
+export const COLS = 12;
 export const ROWS = 20;

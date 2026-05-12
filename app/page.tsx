@@ -259,13 +259,9 @@ export default function Home() {
     setStarted(false);
   }, [handleRestart]);
 
-  const sessionRunning = started && !isOver && !isPaused;
-
-  if (mounted && vpBlocked) {
-    return <MobileGate />;
-  }
-
   // Q quits, P toggles pause — only while a run is in progress.
+  // Must be declared BEFORE the viewport early-returns so the hook count
+  // stays stable across renders (rules of hooks).
   useEffect(() => {
     if (!started || isOver) return;
     const onKey = (e: KeyboardEvent) => {
@@ -287,6 +283,25 @@ export default function Home() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [started, isOver, isPaused, handleQuit, handlePauseToggle]);
+
+  const sessionRunning = started && !isOver && !isPaused;
+
+  // Gate the entire tree on viewport measurement. The static export pre-renders
+  // a desktop layout; on mobile / portrait we have to swap to MobileGate before
+  // any of the heavy game components attempt to mount, or a hydration error in
+  // those components will surface as a generic "page couldn't load" screen.
+  if (!mounted) {
+    return (
+      <div
+        className="fixed inset-0"
+        style={{ background: "#000" }}
+        aria-hidden
+      />
+    );
+  }
+  if (vpBlocked) {
+    return <MobileGate />;
+  }
 
   return (
     <div
@@ -398,7 +413,7 @@ export default function Home() {
       <div className="flex-1 grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-[1fr_minmax(340px,420px)] grid-rows-[auto] md:grid-rows-1 min-h-0">
         <PanelFrame
           label="PLAYFIELD"
-          hint="10 × 20"
+          hint="12 × 20"
           className="flex flex-col min-h-0"
           contentClassName="flex-1 flex min-h-0"
         >

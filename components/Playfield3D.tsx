@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { PCFShadowMap } from "three";
 import { useEffect, useMemo, useRef } from "react";
 import {
   Color,
@@ -318,7 +319,7 @@ function PlayfieldScene({
         <meshBasicMaterial color="#0c0816" />
       </mesh>
 
-      {/* Subtle 10×20 grid backdrop on the rear plane */}
+      {/* Subtle COLS×ROWS grid backdrop on the rear plane */}
       <GridBackdrop />
 
       {/* Frame — left, right, bottom (no top) */}
@@ -459,7 +460,7 @@ function GridBackdrop() {
 export function Playfield3D(props: Playfield3DProps) {
   return (
     <Canvas
-      shadows
+      shadows={{ type: PCFShadowMap }}
       // Pulled back further so blocks read compact and the field has breathing
       // room on all sides. ~5° elevation for a subtle 3D feel.
       camera={{ position: [0, 4, 46], fov: 32 }}
