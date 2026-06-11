@@ -1,0 +1,44 @@
+name: Supabase keep-alive
+
+# Free-tier Supabase pauses a project after ~7 days without API activity,
+# which takes the leaderboard offline. Any API request counts as activity,
+# so a lightweight read-only RPC twice a week keeps it awake — no fake
+# score rows needed.
+#
+# If this run fails, GitHub emails the repo owner — that's the early
+# warning that the project paused anyway (or the secrets changed) and needs
+# a manual restore in the Supabase dashboard.
+on:
+  schedule:
+    # Mon + Thu 09:17 UTC — max gap 4 days, comfortably under the 7-day limit.
+    - cron: "17 9 * * 1,4"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping leaderboard (read-only top_scores RPC)
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Supabase secrets are not configured on this repo."
+            exit 1
+          fi
+          code=$(curl -sS -o resp.json -w "%{http_code}" \
+            --max-time 30 --retry 2 --retry-delay 10 \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/top_scores" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"p_limit": 1}') || code="000"
+          echo "HTTP $code"
+          cat resp.json 2>/dev/null || true
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase keep-alive failed (HTTP $code). The project is likely paused — restore it at https://supabase.com/dashboard."
+            exit 1
+          fi

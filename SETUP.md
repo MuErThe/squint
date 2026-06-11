@@ -86,7 +86,23 @@ If you're using the sub-path option, also set the repo variable
 - **Charset** — names limited to `[A-Za-z0-9_-]`, 3–16 chars, unique
   (case-insensitive).
 
-## 6. Resetting things
+## 6. Keeping the free-tier project awake
+
+Supabase pauses free projects after ~7 days without API activity (the
+leaderboard goes offline and the project URL stops resolving). Two parts:
+
+- **If it's already paused** — log into https://supabase.com/dashboard, open
+  the project, and click **Restore**. Data survives a pause. (A project left
+  paused for ~90 days can be deleted — then re-create it, re-run
+  `supabase/schema.sql`, and update the repo secrets.)
+- **Prevention** — `.github/workflows/keepalive.yml` pings the read-only
+  `top_scores` RPC twice a week (Mon + Thu), which counts as activity. It
+  uses the same repo secrets as the deploy workflow. If a ping fails, GitHub
+  emails the repo owner. Note: GitHub disables cron workflows in repos with
+  no commits for 60 days — it emails a warning first, and any push (or
+  clicking "Enable" in the Actions tab) re-arms it.
+
+## 7. Resetting things
 
 - **Wipe a player from your browser** — open DevTools → Application →
   Local Storage → delete keys under `hand-tetris/v1/`.
