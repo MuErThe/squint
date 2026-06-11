@@ -273,7 +273,7 @@ export function hardDrop(state: GameState): void {
   lockPiece(state);
 }
 
-export function tick(state: GameState, _deltaMs: number): void {
+export function tick(state: GameState): void {
   if (state.isOver) return;
   // Called once per drop tick. Gravity drop (no score bonus).
   softDrop(state, false);

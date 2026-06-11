@@ -16,20 +16,23 @@ export function LeaderboardModal({
   onClose,
   highlightName,
 }: LeaderboardModalProps) {
-  const [rows, setRows] = useState<LeaderboardRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  // null = not fetched yet → loading. Reset whenever the modal opens so each
+  // open shows fresh data (state-during-render instead of a setState effect).
+  const [fetched, setFetched] = useState<LeaderboardRow[] | null>(null);
+  const [prevShow, setPrevShow] = useState(show);
+  if (prevShow !== show) {
+    setPrevShow(show);
+    if (show) setFetched(null);
+  }
+  const rows = fetched ?? [];
+  const loading = show && fetched === null;
 
   useEffect(() => {
     if (!show) return;
     let cancelled = false;
-    setLoading(true);
-    fetchTop10()
-      .then((data) => {
-        if (!cancelled) setRows(data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    fetchTop10().then((data) => {
+      if (!cancelled) setFetched(data);
+    });
     return () => {
       cancelled = true;
     };

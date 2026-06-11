@@ -104,14 +104,6 @@ export default function Home() {
     };
   }, []);
 
-  const handleUiUpdate = useCallback((snap: UiSnapshot) => {
-    setScore(snap.score);
-    setLines(snap.lines);
-    setLevel(snap.level);
-    setQueue(snap.queue);
-    setIsOver(snap.isOver);
-  }, []);
-
   const refreshLeaderboard = useCallback(async () => {
     if (!leaderboardConfigured()) return;
     setLoadingLeaderboard(true);
@@ -123,77 +115,105 @@ export default function Home() {
     }
   }, []);
 
-  // Pre-fetch the board on mount so it's ready by Game Over.
+  // Pre-fetch the board on mount so it's ready by Game Over. No loading
+  // spinner needed for a background prefetch; state is set in the promise
+  // callback, never synchronously inside the effect.
   useEffect(() => {
-    if (mounted) void refreshLeaderboard();
-  }, [mounted, refreshLeaderboard]);
-
-  // Submit-on-game-over effect. Runs exactly once per run.
-  useEffect(() => {
-    if (!isOver) return;
-    if (submittedRunRef.current === runId) return;
-    submittedRunRef.current = runId;
-
-    // Sad descending melody for a natural top-out only — a manual quit
-    // already had its own UX, no need to pile on a defeat sound.
-    if (!endedManually) playSfx("gameOver");
-
-    // Freeze the run duration on first game-over.
-    runDurationRef.current = Math.max(
-      0,
-      performance.now() - runStartRef.current,
-    );
-
-    const finalScore = score;
-    const finalLines = lines;
-    const finalLevel = level;
-
-    // Personal best
-    const improved = maybeUpdateBest({
-      score: finalScore,
-      lines: finalLines,
-      level: finalLevel,
-      at: Date.now(),
+    if (!mounted || !leaderboardConfigured()) return;
+    let stale = false;
+    fetchTop10().then((rows) => {
+      if (!stale) setLeaderboard(rows);
     });
-    if (improved) {
-      setPersonalBest(improved);
-      setNewBest(true);
-    } else {
-      setNewBest(false);
-    }
+    return () => {
+      stale = true;
+    };
+  }, [mounted]);
 
-    // Server submission
-    if (!player || !leaderboardConfigured()) {
-      setSubmission({ state: "skipped" });
-      return;
-    }
-    if (finalLines === 0 && finalScore === 0) {
-      // Don't pollute the board with empty runs.
-      setSubmission({ state: "skipped" });
-      return;
-    }
-    setSubmission({ state: "submitting" });
-    (async () => {
-      const res = await submitScore({
-        name: player.name,
-        token: player.token,
-        score: finalScore,
-        lines: finalLines,
-        level: finalLevel,
-        playTimeMs: runDurationRef.current,
+  // Mirrors the endedManually state for the game-loop event path below —
+  // handleQuit flips both before the engine reports the run as over.
+  const endedManuallyRef = useRef(false);
+
+  // Runs exactly once per run, with the final snapshot from the engine.
+  // Called from the game-loop callback (an event, not an effect), which is
+  // where React wants state-transition side effects to live.
+  const finishRun = useCallback(
+    (snap: UiSnapshot) => {
+      if (submittedRunRef.current === runId) return;
+      submittedRunRef.current = runId;
+
+      // Sad descending melody for a natural top-out only — a manual quit
+      // already had its own UX, no need to pile on a defeat sound.
+      if (!endedManuallyRef.current) playSfx("gameOver");
+
+      // Freeze the run duration on first game-over.
+      runDurationRef.current = Math.max(
+        0,
+        performance.now() - runStartRef.current,
+      );
+
+      // Personal best
+      const improved = maybeUpdateBest({
+        score: snap.score,
+        lines: snap.lines,
+        level: snap.level,
+        at: Date.now(),
       });
-      if (res.ok) {
-        setSubmission({ state: "ok" });
-        await refreshLeaderboard();
+      if (improved) {
+        setPersonalBest(improved);
+        setNewBest(true);
       } else {
-        setSubmission({
-          state: "error",
-          error: res.error,
-          message: res.message,
-        });
+        setNewBest(false);
       }
-    })();
-  }, [isOver, runId, player, score, lines, level, endedManually, refreshLeaderboard]);
+
+      // Server submission
+      if (!player || !leaderboardConfigured()) {
+        setSubmission({ state: "skipped" });
+        return;
+      }
+      if (snap.lines === 0 && snap.score === 0) {
+        // Don't pollute the board with empty runs.
+        setSubmission({ state: "skipped" });
+        return;
+      }
+      setSubmission({ state: "submitting" });
+      void (async () => {
+        const res = await submitScore({
+          name: player.name,
+          token: player.token,
+          score: snap.score,
+          lines: snap.lines,
+          level: snap.level,
+          playTimeMs: runDurationRef.current,
+        });
+        if (res.ok) {
+          setSubmission({ state: "ok" });
+          await refreshLeaderboard();
+        } else {
+          setSubmission({
+            state: "error",
+            error: res.error,
+            message: res.message,
+          });
+        }
+      })();
+    },
+    [runId, player, refreshLeaderboard],
+  );
+  // Latest-callback ref so the stable handleUiUpdate below always invokes the
+  // current closure (player / runId) without re-rendering the game loop.
+  const finishRunRef = useRef(finishRun);
+  useEffect(() => {
+    finishRunRef.current = finishRun;
+  });
+
+  const handleUiUpdate = useCallback((snap: UiSnapshot) => {
+    setScore(snap.score);
+    setLines(snap.lines);
+    setLevel(snap.level);
+    setQueue(snap.queue);
+    setIsOver(snap.isOver);
+    if (snap.isOver) finishRunRef.current(snap);
+  }, []);
 
   const handleStart = useCallback(
     async (
@@ -227,6 +247,7 @@ export default function Home() {
     setQueue(fresh.queue.slice(0, 3));
     setIsOver(false);
     setEndedManually(false);
+    endedManuallyRef.current = false;
     setIsPaused(false);
     setSubmission({ state: "idle" });
     setNewBest(false);
@@ -240,6 +261,7 @@ export default function Home() {
     const g = gameRef.current;
     if (!g || g.isOver) return;
     playSfx("quit");
+    endedManuallyRef.current = true;
     g.isOver = true;
     setEndedManually(true);
     setIsPaused(false);
@@ -691,7 +713,9 @@ function CamBadge({ status }: { status: CameraStatus }) {
   const map: Record<CameraStatus, { label: string; dot: string }> = {
     init: { label: "idle", dot: "var(--ink-dim)" },
     requesting: { label: "starting…", dot: "var(--accent)" },
+    warming: { label: "loading model…", dot: "var(--accent)" },
     ready: { label: "live", dot: "var(--c-S)" },
+    paused: { label: "paused", dot: "var(--ink-dim)" },
     failed: { label: "offline", dot: "var(--accent-hot)" },
   };
   const cur = map[status];

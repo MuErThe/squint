@@ -14,10 +14,13 @@ export function SessionTimer({ running, resetKey }: SessionTimerProps) {
   const lastTickRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  // Reset on key change via state-during-render (the React-sanctioned way to
+  // derive a reset from a prop, avoiding an extra effect pass).
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     setElapsedMs(0);
-    lastTickRef.current = null;
-  }, [resetKey]);
+  }
 
   useEffect(() => {
     if (!running) {

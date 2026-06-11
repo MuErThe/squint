@@ -12,18 +12,18 @@ export type SfxName =
   | "resume"
   | "quit";
 
-const FILES: Record<SfxName, string> = {
-  rotate: "/sounds/rotate.mp3",
-  step: "/sounds/step.mp3",
-  lock: "/sounds/lock.mp3",
-  clear: "/sounds/clear.mp3",
-  clearBig: "/sounds/clear-big.mp3",
-  gameOver: "/sounds/game-over.mp3",
-  start: "/sounds/start.mp3",
-  pause: "/sounds/pause.mp3",
-  resume: "/sounds/resume.mp3",
-  quit: "/sounds/quit.mp3",
+// Optional mp3 overrides. The synth below is the default soundscape; to
+// replace a cue with a real clip, drop the file into `public/sounds/` AND
+// register its filename here. Cues not listed never touch the network, so
+// an empty map means zero asset requests (and zero 404 console noise).
+const MP3_OVERRIDES: Partial<Record<SfxName, string>> = {
+  // clear: "clear.mp3",
 };
+
+// basePath-aware URL prefix — required when the site deploys under a
+// sub-path (e.g. username.github.io/hand-tetris). Inlined at build time via
+// next.config.ts.
+const SOUNDS_BASE = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/sounds/`;
 
 const POOL_SIZE = 3;
 const pool: Partial<Record<SfxName, HTMLAudioElement[]>> = {};
@@ -47,30 +47,39 @@ function getCtx(): AudioContext | null {
   return ctx;
 }
 
+function makeAudio(name: SfxName, file: string): HTMLAudioElement {
+  const a = new Audio(SOUNDS_BASE + file);
+  a.preload = "auto";
+  a.volume = volume;
+  a.addEventListener(
+    "error",
+    () => {
+      mp3Available[name] = false;
+    },
+    { once: true },
+  );
+  a.addEventListener(
+    "canplaythrough",
+    () => {
+      mp3Available[name] = true;
+      // Probe confirmed the file exists — grow the pool so rapid repeats can
+      // overlap. Growing here (not upfront) keeps a missing file to a single
+      // failed request instead of POOL_SIZE of them.
+      const arr = pool[name];
+      while (arr && arr.length < POOL_SIZE) arr.push(makeAudio(name, file));
+    },
+    { once: true },
+  );
+  return a;
+}
+
 function ensurePool(name: SfxName): HTMLAudioElement[] | null {
   if (typeof window === "undefined") return null;
+  const file = MP3_OVERRIDES[name];
+  if (!file) return null;
   let arr = pool[name];
   if (!arr) {
-    arr = Array.from({ length: POOL_SIZE }, () => {
-      const a = new Audio(FILES[name]);
-      a.preload = "auto";
-      a.volume = volume;
-      a.addEventListener(
-        "error",
-        () => {
-          mp3Available[name] = false;
-        },
-        { once: true },
-      );
-      a.addEventListener(
-        "canplaythrough",
-        () => {
-          mp3Available[name] = true;
-        },
-        { once: true },
-      );
-      return a;
-    });
+    arr = [makeAudio(name, file)];
     pool[name] = arr;
   }
   return arr;
@@ -210,8 +219,8 @@ export function unlockAudio(): void {
   // Resume the synth context under the user gesture.
   const c = getCtx();
   if (c && c.state === "suspended") void c.resume();
-  // Prime each mp3 (so the browser allows them to play later, if present).
-  (Object.keys(FILES) as SfxName[]).forEach((n) => {
+  // Prime each registered mp3 (so the browser allows them to play later).
+  (Object.keys(MP3_OVERRIDES) as SfxName[]).forEach((n) => {
     const arr = ensurePool(n);
     if (!arr) return;
     const a = arr[0];

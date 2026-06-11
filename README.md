@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hand Tetris
 
-## Getting Started
+Gesture-controlled Tetris in the browser — steer falling pieces with your
+hand via the webcam. Live at **https://muerthe.github.io/hand-tetris/**.
 
-First, run the development server:
+## Controls
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+| Gesture | Action |
+| --- | --- |
+| Move hand left / right | Steer the piece between columns |
+| Pinch (thumb + index, hand open) | Rotate 90° clockwise |
+| Lower hand into the bottom strip | Fast-fall |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Keyboard works too (no camera required): **← →** move, **↑** rotate,
+**↓** soft drop, **Space** hard drop, **P** pause, **Q** quit. Press **D**
+in-game to toggle the tracking debug overlay (confidence, model FPS,
+gesture state).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Privacy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Camera video never leaves your device.** Frames go straight from the
+webcam into MediaPipe Hands running locally in your browser (WebAssembly);
+no video or landmark data is uploaded anywhere. The camera is released
+(light off) whenever the tab is hidden or closed. The only network calls the
+game makes are fetching the ML model files from jsDelivr and, if you join
+the leaderboard, submitting your name + score to Supabase.
 
-## Learn More
+## How tracking stays accurate
 
-To learn more about Next.js, take a look at the following resources:
+- **MediaPipe Hands** (full model, pinned version) at 1280×720
+- **One Euro Filter** on the steering signal — smooth at rest, no lag on
+  fast moves
+- **Confidence gating** — frames below a model-score threshold are ignored
+- **Dropout grace window** — a briefly lost hand doesn't reset gesture state
+- **Frame debouncing + hysteresis** on pinch and drop-zone so no gesture can
+  trigger off a single noisy frame or flicker at a boundary
+- All thresholds are named constants in `lib/hand/gestures.ts` and
+  `lib/hand/tracker.ts`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Next.js (static export) · React Three Fiber · MediaPipe Hands · Tailwind ·
+Supabase (leaderboard, optional). Deployed to GitHub Pages via the workflow
+in `.github/workflows/deploy.yml`.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [SETUP.md](./SETUP.md) for local development, Supabase setup, and
+deployment details.

@@ -33,8 +33,11 @@ interface StartScreenProps {
 }
 
 export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
-  const [name, setName] = useState("");
-  const [stored, setStored] = useState<StoredPlayer | null>(null);
+  // Remembered player loads via lazy initializers. Safe to read localStorage
+  // here: the page gates rendering on `mounted`, so this component never
+  // renders during SSR/hydration where the value could mismatch.
+  const [stored, setStored] = useState<StoredPlayer | null>(loadStoredPlayer);
+  const [name, setName] = useState(() => loadStoredPlayer()?.name ?? "");
   const [busy, setBusy] = useState(false);
   const [busyReason, setBusyReason] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -42,15 +45,6 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
   const [boardOpen, setBoardOpen] = useState(false);
   const lbOnline = leaderboardConfigured();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Load remembered player on mount.
-  useEffect(() => {
-    const p = loadStoredPlayer();
-    if (p) {
-      setStored(p);
-      setName(p.name);
-    }
-  }, []);
 
   const inlineMsg = (() => {
     if (!name) return null;
@@ -330,6 +324,12 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                 >
                   play with keyboard only →
                 </button>
+                <p
+                  className="font-mono text-[9px] uppercase tracking-[0.18em] text-center mt-1"
+                  style={{ color: "var(--ink-dim)", opacity: 0.8 }}
+                >
+                  🔒 video is processed on-device · never leaves your browser
+                </p>
               </div>
             </div>
 

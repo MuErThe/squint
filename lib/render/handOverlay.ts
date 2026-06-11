@@ -29,6 +29,8 @@ export interface OverlayDotState {
   lastSeen: Map<number, number>;
   /** Skeleton alpha — fades when hand disappears. */
   skeletonAlpha: number;
+  /** Reusable pixel-space landmark buffer — avoids 21 allocations per frame. */
+  pts: { x: number; y: number }[];
 }
 
 export function createOverlayState(): OverlayDotState {
@@ -36,7 +38,20 @@ export function createOverlayState(): OverlayDotState {
     radii: new Map(),
     lastSeen: new Map(),
     skeletonAlpha: 0,
+    pts: Array.from({ length: 21 }, () => ({ x: 0, y: 0 })),
   };
+}
+
+/** Extra diagnostics rendered when the debug overlay is toggled on. */
+export interface DebugDrawInfo {
+  confidence: number;
+  trackingFps: number;
+  smoothedX: number;
+  targetColumn: number;
+  indexTipY: number;
+  /** Drop-zone thresholds (normalized video Y) — drawn as guide lines. */
+  dropEnter: number;
+  dropExit: number;
 }
 
 /**
@@ -61,6 +76,8 @@ interface DrawArgs {
   dropZoneActive: boolean;
   pinchActive: boolean;
   state: OverlayDotState;
+  /** Non-null → draw the diagnostics panel. */
+  debug?: DebugDrawInfo | null;
 }
 
 export function drawHandOverlay({
@@ -73,8 +90,18 @@ export function drawHandOverlay({
   dropZoneActive,
   pinchActive,
   state,
+  debug,
 }: DrawArgs) {
   ctx.clearRect(0, 0, width, height);
+
+  if (debug) {
+    drawDebugPanel(ctx, width, videoRect, debug, {
+      normalizedPinch,
+      pinchActive,
+      dropZoneActive,
+      handVisible: !!landmarks,
+    });
+  }
 
   // Target skeleton alpha — fades as hand disappears
   const targetSkelAlpha = landmarks ? 1 : 0;
@@ -85,13 +112,16 @@ export function drawHandOverlay({
     return;
   }
 
-  // Compute pixel positions inside the visible video rect.
-  const pts = landmarks
-    ? landmarks.map((l) => ({
-        x: videoRect.x + l.x * videoRect.w,
-        y: videoRect.y + l.y * videoRect.h,
-      }))
-    : null;
+  // Compute pixel positions inside the visible video rect (reused buffer).
+  let pts: { x: number; y: number }[] | null = null;
+  if (landmarks) {
+    const n = Math.min(landmarks.length, state.pts.length);
+    for (let i = 0; i < n; i++) {
+      state.pts[i].x = videoRect.x + landmarks[i].x * videoRect.w;
+      state.pts[i].y = videoRect.y + landmarks[i].y * videoRect.h;
+    }
+    pts = state.pts;
+  }
 
   if (pts) {
     // Skeleton lines
@@ -165,6 +195,72 @@ export function drawHandOverlay({
     ctx.fill();
     ctx.restore();
   }
+}
+
+function drawDebugPanel(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  videoRect: VideoRect,
+  d: DebugDrawInfo,
+  live: {
+    normalizedPinch: number;
+    pinchActive: boolean;
+    dropZoneActive: boolean;
+    handVisible: boolean;
+  },
+) {
+  // Drop-zone guide lines (horizontal — unaffected by the CSS mirror).
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = live.dropZoneActive
+    ? THEME.accentHot
+    : "rgba(255,120,73,0.5)";
+  const yEnter = videoRect.y + d.dropEnter * videoRect.h;
+  ctx.beginPath();
+  ctx.moveTo(0, yEnter);
+  ctx.lineTo(width, yEnter);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(245,182,81,0.35)";
+  const yExit = videoRect.y + d.dropExit * videoRect.h;
+  ctx.beginPath();
+  ctx.moveTo(0, yExit);
+  ctx.lineTo(width, yExit);
+  ctx.stroke();
+  ctx.restore();
+
+  // Text block. The canvas is CSS-mirrored (scaleX(-1)) so landmarks line up
+  // with the flipped video — counter-flip here or the text renders reversed.
+  ctx.save();
+  ctx.translate(width, 0);
+  ctx.scale(-1, 1);
+
+  const lines = [
+    `conf  ${d.confidence.toFixed(2)}${live.handVisible ? "" : "  (no hand)"}`,
+    `model ${d.trackingFps.toFixed(0)} fps`,
+    `x     ${d.smoothedX.toFixed(3)} -> col ${d.targetColumn}`,
+    `pinch ${live.normalizedPinch.toFixed(2)} ${live.pinchActive ? "[ACTIVE]" : ""}`,
+    `dropY ${d.indexTipY.toFixed(2)} ${live.dropZoneActive ? "[FAST-FALL]" : ""}`,
+  ];
+
+  const pad = 6;
+  const lineH = 13;
+  const boxW = 168;
+  const boxH = pad * 2 + lineH * lines.length;
+  ctx.fillStyle = "rgba(10, 7, 16, 0.78)";
+  ctx.fillRect(8, 8, boxW, boxH);
+  ctx.strokeStyle = "rgba(245,182,81,0.4)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(8.5, 8.5, boxW - 1, boxH - 1);
+
+  ctx.font = "10px monospace";
+  ctx.textBaseline = "top";
+  for (let i = 0; i < lines.length; i++) {
+    const hot = lines[i].includes("[");
+    ctx.fillStyle = hot ? THEME.accentHot : THEME.accent;
+    ctx.fillText(lines[i], 8 + pad, 8 + pad + i * lineH);
+  }
+  ctx.restore();
 }
 
 function lerp(a: number, b: number, t: number): number {

@@ -17,6 +17,8 @@ export interface GestureState {
   normalizedPinch: number; // current pinch distance / hand size
   indexTipY: number; // 0..1 raw landmark Y (for drop-zone visualisation)
   rawLandmarks: HandLandmark[] | null;
+  confidence: number; // 0..1 model score for the tracked hand (0 = none)
+  trackingFps: number; // smoothed model-results rate, for the debug overlay
 }
 
 export function initialGestureState(): GestureState {
@@ -32,5 +34,7 @@ export function initialGestureState(): GestureState {
     normalizedPinch: 1,
     indexTipY: 0,
     rawLandmarks: null,
+    confidence: 0,
+    trackingFps: 0,
   };
 }

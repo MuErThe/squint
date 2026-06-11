@@ -67,6 +67,29 @@ export const metadata: Metadata = {
   },
 };
 
+// Content-Security-Policy. GitHub Pages can't set response headers, so it
+// ships as a meta tag (React hoists it into <head> at build time).
+// What each allowance is for:
+//   script-src  'unsafe-inline' — Next.js static-export bootstrap scripts
+//               'wasm-unsafe-eval' + cdn.jsdelivr.net — MediaPipe Hands wasm
+//   connect-src cdn.jsdelivr.net — model/wasm asset fetches;
+//               *.supabase.co — leaderboard RPC
+//   worker-src  blob: — MediaPipe may spawn workers from blob URLs
+// frame-ancestors is not enforceable via meta tags, so it's omitted.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self' https://cdn.jsdelivr.net https://*.supabase.co",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -81,6 +104,7 @@ export default function RootLayout({
         className="h-full flex flex-col overflow-hidden"
         suppressHydrationWarning
       >
+        <meta httpEquiv="Content-Security-Policy" content={CSP} />
         {children}
       </body>
     </html>

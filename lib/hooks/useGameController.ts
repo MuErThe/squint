@@ -48,7 +48,9 @@ export function useGameController({
   const lastLockTickRef = useRef<number>(-1);
   const lastOverRef = useRef<boolean>(false);
   const onUiUpdateRef = useRef(onUiUpdate);
-  onUiUpdateRef.current = onUiUpdate;
+  useEffect(() => {
+    onUiUpdateRef.current = onUiUpdate;
+  });
 
   // Keyboard input
   useEffect(() => {
@@ -123,7 +125,7 @@ export function useGameController({
       const interval = g.dropZoneActive ? 50 : s.dropIntervalMs;
       s.msSinceDrop += deltaMs;
       if (s.msSinceDrop >= interval) {
-        tick(s, s.msSinceDrop);
+        tick(s);
         s.msSinceDrop = 0;
       }
     }
