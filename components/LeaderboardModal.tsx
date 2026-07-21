@@ -2,19 +2,35 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { fetchTop10, type LeaderboardRow } from "@/lib/leaderboard/api";
+import {
+  fetchTop10,
+  type LeaderboardRow,
+  type MetaColumn,
+} from "@/lib/leaderboard/api";
 
 interface LeaderboardModalProps {
   show: boolean;
   onClose: () => void;
+  /** Which game's board to load. */
+  game: string;
   /** If provided, the row matching this name is highlighted. */
   highlightName?: string | null;
+  /** Extra game-specific columns rendered from each row's `meta`. */
+  columns?: MetaColumn[];
+  /** Heading, e.g. "hall of pilots". */
+  eyebrow?: string;
+  /** Unit noun for the count line, e.g. "pilots". */
+  countNoun?: string;
 }
 
 export function LeaderboardModal({
   show,
   onClose,
+  game,
   highlightName,
+  columns = [],
+  eyebrow = "hall of fame",
+  countNoun = "players",
 }: LeaderboardModalProps) {
   // null = not fetched yet → loading. Reset whenever the modal opens so each
   // open shows fresh data (state-during-render instead of a setState effect).
@@ -30,13 +46,13 @@ export function LeaderboardModal({
   useEffect(() => {
     if (!show) return;
     let cancelled = false;
-    fetchTop10().then((data) => {
+    fetchTop10(game).then((data) => {
       if (!cancelled) setFetched(data);
     });
     return () => {
       cancelled = true;
     };
-  }, [show]);
+  }, [show, game]);
 
   // Close on Esc
   useEffect(() => {
@@ -51,6 +67,12 @@ export function LeaderboardModal({
   const me = highlightName?.toLowerCase() ?? null;
   const podium = rows.slice(0, 3);
   const rest = rows.slice(3);
+  const gridTemplateColumns = [
+    "32px",
+    "1fr",
+    "84px",
+    ...columns.map((c) => `${c.width ? c.width + 8 : 56}px`),
+  ].join(" ");
 
   return (
     <AnimatePresence>
@@ -101,7 +123,7 @@ export function LeaderboardModal({
                   className="font-display text-[10px] tracking-[0.32em] mb-1"
                   style={{ color: "var(--accent)" }}
                 >
-                  ─── hall of pilots ───
+                  ─── {eyebrow} ───
                 </div>
                 <h2
                   className="font-display tracking-[0.2em] leading-none"
@@ -117,7 +139,8 @@ export function LeaderboardModal({
                   className="font-mono text-[9px] uppercase tracking-[0.22em] mt-1"
                   style={{ color: "var(--ink-dim)" }}
                 >
-                  all-time · top 10 · {loading ? "syncing…" : `${rows.length} pilots`}
+                  all-time · top 10 ·{" "}
+                  {loading ? "syncing…" : `${rows.length} ${countNoun}`}
                 </div>
               </div>
               <button
@@ -167,6 +190,7 @@ export function LeaderboardModal({
                             row={r}
                             isMe={!!isMe}
                             featured={idx === 0}
+                            columns={columns}
                           />
                         );
                       })}
@@ -187,14 +211,17 @@ export function LeaderboardModal({
                         style={{
                           borderColor: "var(--panel-border)",
                           color: "var(--ink-dim)",
-                          gridTemplateColumns: "32px 1fr 84px 56px 48px",
+                          gridTemplateColumns,
                         }}
                       >
                         <span>#</span>
                         <span>name</span>
                         <span className="text-right">score</span>
-                        <span className="text-right">lines</span>
-                        <span className="text-right">lvl</span>
+                        {columns.map((c) => (
+                          <span key={c.label} className="text-right">
+                            {c.label}
+                          </span>
+                        ))}
                       </div>
                       {rest.map((r) => {
                         const isMe = me && r.name.toLowerCase() === me;
@@ -203,7 +230,7 @@ export function LeaderboardModal({
                             key={`${r.rank}-${r.name}`}
                             className="grid items-center px-3 py-1.5"
                             style={{
-                              gridTemplateColumns: "32px 1fr 84px 56px 48px",
+                              gridTemplateColumns,
                               background: isMe
                                 ? "linear-gradient(90deg, rgba(245,182,81,0.20), rgba(245,182,81,0.04))"
                                 : "transparent",
@@ -242,18 +269,15 @@ export function LeaderboardModal({
                             >
                               {r.score.toLocaleString("en-US")}
                             </span>
-                            <span
-                              className="text-right font-mono text-[11px]"
-                              style={{ color: "var(--ink-dim)" }}
-                            >
-                              {r.lines}
-                            </span>
-                            <span
-                              className="text-right font-mono text-[11px]"
-                              style={{ color: "var(--ink-dim)" }}
-                            >
-                              {r.level}
-                            </span>
+                            {columns.map((c) => (
+                              <span
+                                key={c.label}
+                                className="text-right font-mono text-[11px]"
+                                style={{ color: "var(--ink-dim)" }}
+                              >
+                                {c.get(r.meta)}
+                              </span>
+                            ))}
                           </div>
                         );
                       })}
@@ -284,11 +308,16 @@ function PodiumCell({
   row,
   isMe,
   featured,
+  columns,
 }: {
   row: LeaderboardRow;
   isMe: boolean;
   featured: boolean;
+  columns: MetaColumn[];
 }) {
+  const subtitle = columns
+    .map((c) => `${c.get(row.meta)} ${c.label}`)
+    .join(" · ");
   const medal =
     row.rank === 1 ? "🏆" : row.rank === 2 ? "🥈" : row.rank === 3 ? "🥉" : "";
   const colors: Record<number, string> = {
@@ -361,12 +390,14 @@ function PodiumCell({
       >
         {row.score.toLocaleString("en-US")}
       </div>
-      <div
-        className="font-mono text-[8px] uppercase tracking-[0.18em] mt-0.5"
-        style={{ color: "var(--ink-dim)" }}
-      >
-        {row.lines} lines · lvl {row.level}
-      </div>
+      {subtitle && (
+        <div
+          className="font-mono text-[8px] uppercase tracking-[0.18em] mt-0.5"
+          style={{ color: "var(--ink-dim)" }}
+        >
+          {subtitle}
+        </div>
+      )}
     </motion.div>
   );
 }

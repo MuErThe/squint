@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { LeaderboardRow } from "@/lib/leaderboard/api";
+import type { LeaderboardRow, MetaColumn } from "@/lib/leaderboard/api";
 
 interface LeaderboardProps {
   rows: LeaderboardRow[];
@@ -10,6 +10,10 @@ interface LeaderboardProps {
   highlightName?: string | null;
   /** Status text shown when there's nothing meaningful to display. */
   emptyMessage?: string;
+  /** Extra game-specific columns rendered after the score, from row `meta`. */
+  columns?: MetaColumn[];
+  /** Header label. */
+  title?: string;
 }
 
 export function Leaderboard({
@@ -17,8 +21,17 @@ export function Leaderboard({
   loading,
   highlightName,
   emptyMessage = "no scores yet · you could be first",
+  columns = [],
+  title = "LEADERBOARD ─ ALL TIME · TOP 10",
 }: LeaderboardProps) {
   const highlight = highlightName?.toLowerCase();
+  // Grid: rank · name (flex) · score · [each meta column].
+  const gridTemplateColumns = [
+    "32px",
+    "1fr",
+    "64px",
+    ...columns.map((c) => `${c.width ?? 48}px`),
+  ].join(" ");
   return (
     <div
       className="rounded-[2px] border overflow-hidden"
@@ -35,7 +48,7 @@ export function Leaderboard({
           className="font-display text-[10px] tracking-[0.22em]"
           style={{ color: "var(--accent)" }}
         >
-          LEADERBOARD ─ ALL TIME · TOP 10
+          {title}
         </span>
         {loading && (
           <span
@@ -61,14 +74,17 @@ export function Leaderboard({
             style={{
               borderColor: "var(--panel-border)",
               color: "var(--ink-dim)",
-              gridTemplateColumns: "32px 1fr 64px 48px 48px",
+              gridTemplateColumns,
             }}
           >
             <span>#</span>
             <span>name</span>
             <span className="text-right">score</span>
-            <span className="text-right">lines</span>
-            <span className="text-right">lvl</span>
+            {columns.map((c) => (
+              <span key={c.label} className="text-right">
+                {c.label}
+              </span>
+            ))}
           </div>
           {rows.map((r) => {
             const isMe =
@@ -85,7 +101,7 @@ export function Leaderboard({
                     ? "linear-gradient(90deg, rgba(245,182,81,0.18), rgba(245,182,81,0.04))"
                     : "transparent",
                   color: isMe ? "var(--accent)" : "var(--ink)",
-                  gridTemplateColumns: "32px 1fr 64px 48px 48px",
+                  gridTemplateColumns,
                   boxShadow: isMe
                     ? "inset 2px 0 0 var(--accent)"
                     : "inset 2px 0 0 transparent",
@@ -111,18 +127,15 @@ export function Leaderboard({
                 <span className="text-right font-display">
                   {r.score.toLocaleString("en-US")}
                 </span>
-                <span
-                  className="text-right"
-                  style={{ color: "var(--ink-dim)" }}
-                >
-                  {r.lines}
-                </span>
-                <span
-                  className="text-right"
-                  style={{ color: "var(--ink-dim)" }}
-                >
-                  {r.level}
-                </span>
+                {columns.map((c) => (
+                  <span
+                    key={c.label}
+                    className="text-right"
+                    style={{ color: "var(--ink-dim)" }}
+                  >
+                    {c.get(r.meta)}
+                  </span>
+                ))}
               </motion.div>
             );
           })}

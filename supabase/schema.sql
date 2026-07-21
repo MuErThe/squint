@@ -1,19 +1,24 @@
--- HAND TETRIS leaderboard schema
--- Run this once in the Supabase SQL Editor for a fresh project.
--- Idempotent: safe to re-run (drops + recreates).
+-- CREATIVE ARCADE leaderboard schema (multi-game)
+-- Run this once in the Supabase SQL Editor for a FRESH project.
+-- Idempotent: safe to re-run (drops + recreates) — but on a project that
+-- already has live scores, run supabase/migrations/2026-add-game-column.sql
+-- instead, which preserves existing rows.
 
 -- ============================================================
 -- 1. Schema reset
 -- ============================================================
 
-drop function if exists public.submit_score(text, text, int, int, int, int) cascade;
+drop function if exists public.submit_game_score(text, text, text, int, jsonb, int) cascade;
 drop function if exists public.reserve_name(text) cascade;
-drop function if exists public.top_scores(int) cascade;
+drop function if exists public.top_game_scores(text, int) cascade;
 drop table if exists public.scores cascade;
 drop table if exists public.players cascade;
 
 -- ============================================================
 -- 2. Tables
+--    `players` is a single arcade identity (name + secret token) shared
+--    across every game. `scores` is generic: each row belongs to a `game`
+--    and carries a `meta` blob of that game's stats.
 -- ============================================================
 
 create table public.players (
@@ -30,15 +35,15 @@ create unique index players_name_ci on public.players ((lower(name)));
 
 create table public.scores (
   id            uuid primary key default gen_random_uuid(),
-  name          text not null references public.players(name) on delete cascade,
-  score         int  not null check (score >= 0),
-  lines         int  not null check (lines >= 0),
-  level         int  not null check (level >= 1),
-  play_time_ms  int  not null check (play_time_ms >= 0),
+  name          text  not null references public.players(name) on delete cascade,
+  game          text  not null,
+  score         int   not null check (score >= 0),
+  meta          jsonb not null default '{}'::jsonb,
+  play_time_ms  int   not null check (play_time_ms >= 0),
   created_at    timestamptz not null default now()
 );
 
-create index scores_top on public.scores (score desc, created_at desc);
+create index scores_game_top on public.scores (game, score desc, created_at desc);
 create index scores_by_name on public.scores (name);
 
 -- ============================================================
@@ -61,10 +66,7 @@ create policy "scores_read"  on public.scores  for select using (true);
 
 -- ============================================================
 -- 4. RPC: reserve_name(name) → token
---    - validates length + charset
---    - checks the (case-insensitive) name is not taken
---    - rejects entries that match the profanity list
---    - generates a 32-hex-char secret token, stores it, returns it
+--    One identity used across all games.
 -- ============================================================
 
 create or replace function public.reserve_name(p_name text)
@@ -118,18 +120,18 @@ end;
 $$;
 
 -- ============================================================
--- 5. RPC: submit_score(name, token, score, lines, level, play_time_ms)
+-- 5. RPC: submit_game_score(name, token, game, score, meta, play_time_ms)
 --    - authenticates name via token
---    - validates score plausibility vs lines / level
---    - 10-second per-player rate limit
+--    - validates plausibility per game (Tetris tight; others relaxed)
+--    - 10-second per-player-per-game rate limit
 -- ============================================================
 
-create or replace function public.submit_score(
+create or replace function public.submit_game_score(
   p_name          text,
   p_token         text,
+  p_game          text,
   p_score         int,
-  p_lines         int,
-  p_level         int,
+  p_meta          jsonb,
   p_play_time_ms  int
 )
 returns void
@@ -138,69 +140,77 @@ security definer
 set search_path = public
 as $$
 declare
-  v_stored_token text;
-  v_recent       int;
+  v_stored_token  text;
+  v_recent        int;
+  v_lines         int;
+  v_level         int;
   v_max_plausible int;
 begin
-  -- Auth
+  if p_game not in ('tetris', 'eyeball-it', 'kern-combat', 'colour-forge') then
+    raise exception 'unknown_game';
+  end if;
+
   select token into v_stored_token
     from public.players
     where name = p_name;
-
   if v_stored_token is null then
     raise exception 'unknown_name';
   end if;
-
   if v_stored_token != p_token then
     raise exception 'bad_token';
   end if;
 
-  -- Numeric sanity
-  if p_score < 0 or p_lines < 0 or p_level < 1 or p_play_time_ms < 0 then
+  if p_score < 0 or p_play_time_ms < 0 then
     raise exception 'invalid_range';
   end if;
 
-  -- Score ceiling. The legal max per single locked piece is a 4-line clear
-  -- at the current level (800 * level). The level grows ~1 per 10 lines.
-  -- A generous upper bound is `lines * 800 * level + level * 1000`, which
-  -- leaves headroom for soft/hard-drop bonuses without admitting wild values.
-  v_max_plausible := (p_lines + 4) * 800 * p_level + (p_level * 1000);
-  if p_score > v_max_plausible then
-    raise exception 'implausible_score';
+  if p_game = 'tetris' then
+    v_lines := coalesce((p_meta->>'lines')::int, 0);
+    v_level := coalesce((p_meta->>'level')::int, 1);
+    if v_level < 1 or v_lines < 0 then
+      raise exception 'invalid_range';
+    end if;
+    v_max_plausible := (v_lines + 4) * 800 * v_level + (v_level * 1000);
+    if p_score > v_max_plausible then
+      raise exception 'implausible_score';
+    end if;
+    if p_play_time_ms < v_lines * 600 then
+      raise exception 'implausible_time';
+    end if;
+  else
+    if p_score > 100000 then
+      raise exception 'implausible_score';
+    end if;
+    if p_play_time_ms < 2000 then
+      raise exception 'implausible_time';
+    end if;
   end if;
 
-  -- Need at least ~0.6 s of real play per cleared line.
-  if p_play_time_ms < p_lines * 600 then
-    raise exception 'implausible_time';
-  end if;
-
-  -- Rate-limit: one submission per name per 10 seconds.
   select count(*) into v_recent
     from public.scores
     where name = p_name
+      and game = p_game
       and created_at > now() - interval '10 seconds';
-
   if v_recent > 0 then
     raise exception 'rate_limited';
   end if;
 
-  insert into public.scores (name, score, lines, level, play_time_ms)
-    values (p_name, p_score, p_lines, p_level, p_play_time_ms);
+  insert into public.scores (name, game, score, meta, play_time_ms)
+    values (p_name, p_game, p_score, coalesce(p_meta, '{}'::jsonb), p_play_time_ms);
 end;
 $$;
 
 -- ============================================================
--- 6. RPC: top_scores(limit) → ordered list
---    Returns each player's BEST score (one row per name).
+-- 6. RPC: top_game_scores(game, limit) → ordered list
+--    Returns each player's BEST score for that game (one row per name).
 -- ============================================================
 
-create or replace function public.top_scores(p_limit int default 10)
+create or replace function public.top_game_scores(p_game text, p_limit int default 10)
 returns table (
   rank        int,
   name        text,
   score       int,
-  lines       int,
-  level       int,
+  meta        jsonb,
   created_at  timestamptz
 )
 language sql
@@ -209,13 +219,14 @@ set search_path = public
 as $$
   with best as (
     select distinct on (s.name)
-      s.name, s.score, s.lines, s.level, s.created_at
+      s.name, s.score, s.meta, s.created_at
     from public.scores s
+    where s.game = p_game
     order by s.name, s.score desc, s.created_at asc
   )
   select
     cast(row_number() over (order by b.score desc, b.created_at asc) as int) as rank,
-    b.name, b.score, b.lines, b.level, b.created_at
+    b.name, b.score, b.meta, b.created_at
   from best b
   order by b.score desc, b.created_at asc
   limit greatest(1, least(coalesce(p_limit, 10), 100));
@@ -224,7 +235,7 @@ $$;
 -- ============================================================
 -- 7. Auto-dedup trigger
 --    When a new row is inserted, drop any older row from the SAME player
---    with identical (score, lines, level). Keeps the `scores` table tidy
+--    and SAME game with identical (score, meta). Keeps the table tidy
 --    without ever touching another player's rows.
 -- ============================================================
 
@@ -238,9 +249,9 @@ begin
   delete from public.scores
   where id <> new.id
     and name = new.name
+    and game = new.game
     and score = new.score
-    and lines = new.lines
-    and level = new.level
+    and meta = new.meta
     and created_at < new.created_at;
   return new;
 end;
@@ -253,11 +264,10 @@ create trigger scores_dedup_after_insert
 
 -- ============================================================
 -- 8. Permissions: let the anon role call our functions.
---    (Reading the tables is already covered by RLS.)
 -- ============================================================
 
-grant execute on function public.reserve_name(text)               to anon;
-grant execute on function public.submit_score(text, text, int, int, int, int) to anon;
-grant execute on function public.top_scores(int)                  to anon;
+grant execute on function public.reserve_name(text)                               to anon;
+grant execute on function public.submit_game_score(text, text, text, int, jsonb, int) to anon;
+grant execute on function public.top_game_scores(text, int)                       to anon;
 
 -- Done. From a fresh Supabase project: open SQL Editor, paste, run.

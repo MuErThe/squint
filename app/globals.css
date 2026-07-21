@@ -18,6 +18,12 @@
   --c-Z: #e57373;
   --c-J: #5b8def;
   --c-L: #f0a04b;
+
+  /* Exercise register — the "artboard" mounted inside the cabinet.
+     Slightly lighter than the page, precise hairlines, quiet ticks. */
+  --board-bg: #17141f;
+  --board-line: rgba(236, 230, 216, 0.14);
+  --board-tick: rgba(236, 230, 216, 0.28);
 }
 
 @theme inline {
@@ -109,4 +115,151 @@ button {
 ::selection {
   background: var(--accent);
   color: var(--bg-0);
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Vignettes — the hub cards' living previews. Pure CSS keyframes; the
+   component (components/arcade/Vignette.tsx) only provides markup.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* tetris: pieces drift down and settle on the stack */
+@keyframes vg-fall {
+  0% { transform: translateY(-26px); opacity: 0; }
+  12% { opacity: 1; }
+  62% { transform: translateY(0); opacity: 1; }
+  88% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+/* eyeball: crosshair wanders then locks onto the mark */
+@keyframes vg-seek-x {
+  0% { transform: translateX(-26px); }
+  35% { transform: translateX(12px); }
+  60%, 100% { transform: translateX(0); }
+}
+@keyframes vg-seek-y {
+  0% { transform: translateY(14px); }
+  35% { transform: translateY(-8px); }
+  60%, 100% { transform: translateY(0); }
+}
+@keyframes vg-ping {
+  0%, 55% { transform: scale(0.4); opacity: 0; }
+  65% { transform: scale(0.6); opacity: 0.9; }
+  95%, 100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* kern: outer letters slide from cramped/loose into even spacing */
+@keyframes vg-kern-l {
+  0% { transform: translateX(9px); }
+  45%, 78% { transform: translateX(0); }
+  100% { transform: translateX(9px); }
+}
+@keyframes vg-kern-r {
+  0% { transform: translateX(-14px); }
+  45%, 78% { transform: translateX(0); }
+  100% { transform: translateX(-14px); }
+}
+
+/* colour: the mix chip sweeps hue until it matches the target */
+@keyframes vg-hue {
+  0% { filter: hue-rotate(110deg); }
+  55%, 85% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(110deg); }
+}
+
+/* circles: a doodle gets stroke-drawn inside one circle */
+@keyframes vg-draw {
+  0% { stroke-dashoffset: 60; opacity: 0.2; }
+  15% { opacity: 1; }
+  55% { stroke-dashoffset: 0; opacity: 1; }
+  85% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 60; opacity: 0.2; }
+}
+
+/* warm-up: flame flicker + step dots filling in sequence */
+@keyframes vg-flicker {
+  0%, 100% { transform: scale(1) rotate(-1.5deg); }
+  30% { transform: scale(1.08) rotate(1.5deg); }
+  60% { transform: scale(0.95) rotate(-1deg); }
+  80% { transform: scale(1.05) rotate(0.5deg); }
+}
+@keyframes vg-dot {
+  0%, 20% { opacity: 0.18; }
+  30%, 80% { opacity: 1; }
+  90%, 100% { opacity: 0.18; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vg-anim,
+  .vg-anim * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Hub bento grid + cards
+   ──────────────────────────────────────────────────────────────────────── */
+
+.hub-bento {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-width: 1020px;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "warmup"
+    "tetris"
+    "eyeball"
+    "kern"
+    "colour"
+    "circles";
+}
+
+@media (min-width: 900px) {
+  .hub-bento {
+    grid-template-columns: 1.25fr 1fr 1fr;
+    grid-template-areas:
+      "warmup warmup warmup"
+      "tetris eyeball kern"
+      "tetris colour circles";
+  }
+}
+
+/* Game pages: play-surface panel + right rail (Tetris layout grammar).
+   Narrow screens stack and scroll; wide screens pin to the viewport with a
+   height-bounded row so the play surface sizes itself to fit. */
+.game-cols {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  min-height: 0;
+  overflow-y: auto;
+}
+@media (min-width: 980px) {
+  .game-cols {
+    grid-template-columns: 1fr minmax(300px, 360px);
+    grid-template-rows: minmax(0, 1fr);
+    overflow-y: visible;
+  }
+}
+
+/* Each card carries its game accent in --tint; hover lights it up. */
+.bento-card {
+  border: 1px solid var(--panel-border);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.bento-card:hover,
+.bento-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--tint) 65%, transparent);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35),
+    0 0 22px color-mix(in srgb, var(--tint) 18%, transparent);
+  outline: none;
+}
+.bento-card:hover .vg-anim {
+  filter: brightness(1.15);
 }

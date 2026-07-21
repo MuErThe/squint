@@ -2,7 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Leaderboard } from "./Leaderboard";
-import type { LeaderboardRow, SubmitError } from "@/lib/leaderboard/api";
+import type {
+  LeaderboardRow,
+  MetaColumn,
+  SubmitError,
+} from "@/lib/leaderboard/api";
 import type { StoredBest } from "@/lib/leaderboard/local";
 
 export type SubmissionStatus =
@@ -23,6 +27,8 @@ interface GameOverOverlayProps {
   submission: SubmissionStatus;
   leaderboard: LeaderboardRow[];
   loadingLeaderboard: boolean;
+  /** Game-specific board columns rendered from each row's `meta`. */
+  leaderboardColumns?: MetaColumn[];
   onRestart: () => void;
   /** Optional — when given, renders a secondary "BACK TO MENU" action. */
   onBackToMenu?: () => void;
@@ -41,6 +47,7 @@ export function GameOverOverlay({
   submission,
   leaderboard,
   loadingLeaderboard,
+  leaderboardColumns,
   onRestart,
   onBackToMenu,
   endedManually = false,
@@ -143,6 +150,7 @@ export function GameOverOverlay({
                   rows={leaderboard}
                   loading={loadingLeaderboard}
                   highlightName={playerName}
+                  columns={leaderboardColumns}
                   emptyMessage={
                     submission.state === "skipped"
                       ? "leaderboard offline · configure supabase to enable"

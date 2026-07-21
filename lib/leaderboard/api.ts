@@ -6,9 +6,22 @@ export interface LeaderboardRow {
   rank: number;
   name: string;
   score: number;
-  lines: number;
-  level: number;
+  /** Per-game stats blob (e.g. Tetris: { lines, level }). */
+  meta: Record<string, unknown>;
   created_at: string;
+}
+
+/**
+ * A derived column rendered from a row's `meta` blob. Each game supplies its
+ * own set (Tetris → lines + level; an accuracy game → best round, etc.), so the
+ * shared board UI stays game-agnostic.
+ */
+export interface MetaColumn {
+  /** Header text (lowercase, short). */
+  label: string;
+  get: (meta: Record<string, unknown>) => number | string;
+  /** Column width in px for the grid template (default 48). */
+  width?: number;
 }
 
 export type ReserveError =
@@ -29,6 +42,7 @@ export type SubmitError =
   | "rate_limited"
   | "bad_token"
   | "unknown_name"
+  | "unknown_game"
   | "implausible_score"
   | "implausible_time"
   | "invalid_range"
@@ -78,9 +92,11 @@ export async function reserveName(name: string): Promise<ReserveResult> {
 export interface SubmitArgs {
   name: string;
   token: string;
+  /** Which game's board to write to (e.g. "tetris", "eyeball-it"). */
+  game: string;
   score: number;
-  lines: number;
-  level: number;
+  /** Per-game stats persisted alongside the score. */
+  meta?: Record<string, unknown>;
   playTimeMs: number;
 }
 
@@ -88,12 +104,12 @@ export async function submitScore(args: SubmitArgs): Promise<SubmitResult> {
   const sb = getSupabase();
   if (!sb) return { ok: false, error: "offline" };
   try {
-    const { error } = await sb.rpc("submit_score", {
+    const { error } = await sb.rpc("submit_game_score", {
       p_name: args.name,
       p_token: args.token,
+      p_game: args.game,
       p_score: Math.floor(args.score),
-      p_lines: Math.floor(args.lines),
-      p_level: Math.floor(args.level),
+      p_meta: args.meta ?? {},
       p_play_time_ms: Math.floor(args.playTimeMs),
     });
     if (error) {
@@ -101,6 +117,7 @@ export async function submitScore(args: SubmitArgs): Promise<SubmitResult> {
         "rate_limited",
         "bad_token",
         "unknown_name",
+        "unknown_game",
         "implausible_score",
         "implausible_time",
         "invalid_range",
@@ -117,21 +134,30 @@ export async function submitScore(args: SubmitArgs): Promise<SubmitResult> {
   }
 }
 
-export async function fetchTop10(): Promise<LeaderboardRow[]> {
+export async function fetchTop10(game: string): Promise<LeaderboardRow[]> {
   const sb = getSupabase();
   if (!sb) return [];
   // Over-fetch so that after collapsing duplicate runs per player we can still
   // surface a full top-10 of distinct entries.
-  const { data, error } = await sb.rpc("top_scores", { p_limit: 50 });
+  const { data, error } = await sb.rpc("top_game_scores", {
+    p_game: game,
+    p_limit: 50,
+  });
   if (error || !Array.isArray(data)) return [];
-  const rows = data as LeaderboardRow[];
+  const rows = (data as Array<Partial<LeaderboardRow>>).map((r) => ({
+    rank: Number(r.rank ?? 0),
+    name: String(r.name ?? ""),
+    score: Number(r.score ?? 0),
+    meta: (r.meta as Record<string, unknown> | undefined) ?? {},
+    created_at: String(r.created_at ?? ""),
+  })) as LeaderboardRow[];
 
   // Two-pass dedup:
   //   1. Same case-insensitive name → keep the first sighting. Rows arrive
   //      sorted best-first, so first = that player's best run.
-  //   2. Same (score, lines, level) tuple → keep the most recent. Catches the
-  //      case where a player registered under more than one spelling and ran
-  //      the exact same stats — only the latest record survives.
+  //   2. Same (score, meta) tuple → keep the most recent. Catches the case
+  //      where a player registered under more than one spelling and ran the
+  //      exact same stats — only the latest record survives.
   const byName = new Map<string, LeaderboardRow>();
   for (const r of rows) {
     const key = (r.name ?? "").toLowerCase();
@@ -140,7 +166,7 @@ export async function fetchTop10(): Promise<LeaderboardRow[]> {
 
   const byStats = new Map<string, LeaderboardRow>();
   for (const r of byName.values()) {
-    const key = `${r.score}|${r.lines}|${r.level}`;
+    const key = `${r.score}|${JSON.stringify(r.meta)}`;
     const prev = byStats.get(key);
     if (
       !prev ||
