@@ -10,6 +10,9 @@ import type { GameResult } from "@/components/arcade/GameShell";
 import { Vignette, type VignetteKind } from "@/components/arcade/Vignette";
 import { currentStreak, doneToday, recordToday } from "@/lib/warmup/streak";
 import { playSfx, unlockAudio } from "@/lib/audio/sfx";
+import { motion } from "framer-motion";
+import { FocalPlane, RACK, sharpenIn } from "@/components/focal/FocalPlane";
+import { Detent } from "@/components/focal/Detent";
 
 interface Step {
   id: string;
@@ -82,6 +85,7 @@ export default function WarmUpPage() {
   return (
     <div className="relative flex-1 flex flex-col w-full h-screen overflow-hidden" style={{ padding: "16px 18px" }}>
       {/* Header */}
+      <FocalPlane level={phase === "intro" && mounted ? 2 : 0} className="flex-1 flex flex-col min-h-0">
       <header className="shrink-0 flex items-center justify-between flex-wrap gap-3 mb-3">
         <div className="flex items-baseline gap-3">
           <Link href="/" className="font-mono text-[9px] uppercase tracking-[0.22em] self-center transition-colors hover:text-[var(--accent)]" style={{ color: "var(--ink-dim)" }}>
@@ -129,10 +133,11 @@ export default function WarmUpPage() {
 
         {phase === "summary" && <Summary streak={streak} results={results} />}
       </main>
+      </FocalPlane>
 
       {/* Intro overlay */}
       {phase === "intro" && mounted && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto" style={{ background: "rgba(14,10,20,0.92)", backdropFilter: "blur(20px)" }}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto" style={{ background: "rgba(14,10,20,0.55)" }}>
           <Link href="/" className="fixed top-4 left-4 z-[55] font-mono text-[10px] uppercase tracking-[0.24em] px-3 py-2 rounded-[2px] border hover:-translate-y-px transition-transform" style={{ borderColor: "var(--panel-border-strong)", color: "var(--ink-dim)", background: "rgba(0,0,0,0.35)" }}>
             ◂ arcade
           </Link>
@@ -162,9 +167,9 @@ export default function WarmUpPage() {
                 {streak > 0 ? <>🔥 day {streak} streak {alreadyDone.current && "· done today ✓"}</> : "start your streak today"}
               </div>
 
-              <button onClick={start} className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.22)]" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)", boxShadow: "0 0 24px rgba(245,182,81,0.18)" }}>
+              <Detent onClick={start} className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.22)]" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)", boxShadow: "0 0 24px rgba(245,182,81,0.18)" }}>
                 ▶ START WARM-UP
-              </button>
+              </Detent>
             </div>
           </div>
         </div>
@@ -175,7 +180,7 @@ export default function WarmUpPage() {
 
 function Interstitial({ done, next, value, onContinue }: { done: Step; next: Step; value: number; onContinue: () => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center">
+    <motion.div initial={sharpenIn.initial} animate={sharpenIn.animate} transition={RACK} className="flex-1 flex flex-col items-center justify-center gap-5 text-center">
       <div className="font-display text-[12px] tracking-[0.28em]" style={{ color: done.tint }}>
         ✓ {done.label} · {value}{done.unit}
       </div>
@@ -190,10 +195,10 @@ function Interstitial({ done, next, value, onContinue }: { done: Step; next: Ste
         {next.label}
       </div>
       <div className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: next.tint }}>{next.trains}</div>
-      <button onClick={onContinue} autoFocus className="font-display tracking-[0.24em] text-[13px] px-8 py-3 border transition-all duration-150 hover:bg-[rgba(245,182,81,0.2)]" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)" }}>
+      <Detent onClick={onContinue} autoFocus className="font-display tracking-[0.24em] text-[13px] px-8 py-3 border transition-all duration-150 hover:bg-[rgba(245,182,81,0.2)]" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)" }}>
         CONTINUE ▸
-      </button>
-    </div>
+      </Detent>
+    </motion.div>
   );
 }
 
@@ -201,7 +206,7 @@ function Summary({ streak, results }: { streak: number; results: number[] }) {
   const bestIdx = results.reduce((best, v, i, arr) => (v > arr[best] ? i : best), 0);
   return (
     <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center py-2">
-      <div className="w-full" style={{ maxWidth: 520 }}>
+      <motion.div initial={sharpenIn.initial} animate={sharpenIn.animate} transition={RACK} className="w-full" style={{ maxWidth: 520 }}>
         <div className="text-center">
           <div className="font-display text-[10px] tracking-[0.32em] mb-3" style={{ color: "var(--accent)" }}>─── warm-up complete ───</div>
           <div className="font-display leading-none mb-1" style={{ color: "var(--accent)", fontSize: 52, textShadow: "0 0 18px rgba(245,182,81,0.4)" }}>
@@ -236,7 +241,7 @@ function Summary({ streak, results }: { streak: number; results: number[] }) {
             ← BACK TO ARCADE
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

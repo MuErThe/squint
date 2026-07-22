@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameShell, type GameResult } from "@/components/arcade/GameShell";
 import { GameLayout } from "@/components/arcade/GameLayout";
+import { Detent } from "@/components/focal/Detent";
 import { RoundReveal } from "@/components/arcade/RoundReveal";
 import { pairRule, scoreGaps } from "@/lib/kern/engine";
 import {
@@ -263,14 +264,14 @@ export function KernGame({
       }
       action={
         !locked ? (
-          <button
+          <Detent
             type="button"
             onClick={lockIn}
             className="font-display tracking-[0.24em] text-[13px] px-6 py-3 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.2)]"
             style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)" }}
           >
             ▣ LOCK IT IN
-          </button>
+          </Detent>
         ) : undefined
       }
     >
@@ -332,7 +333,11 @@ export function KernGame({
                 onPointerDown={onGlyphDown(i)}
                 onPointerMove={onGlyphMove}
                 onPointerUp={onGlyphUp}
-                className="absolute select-none"
+                className={`absolute select-none ${
+                  locked && (i === locked.score.worstGap || i === locked.score.worstGap - 1)
+                    ? "aberrate-text"
+                    : ""
+                }`}
                 style={{
                   left: round.pad + (positions[i] ?? 0),
                   top: "50%",

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { Detent } from "@/components/focal/Detent";
 
 interface RoundRevealProps {
   show: boolean;
@@ -105,7 +106,7 @@ export function RoundReveal({
             </div>
           )}
 
-          <button
+          <Detent
             type="button"
             onClick={onContinue}
             autoFocus
@@ -117,7 +118,7 @@ export function RoundReveal({
             }}
           >
             {isLast ? "SEE RESULTS ▸" : "NEXT ▸"}
-          </button>
+          </Detent>
         </motion.div>
       )}
     </AnimatePresence>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameShell, type GameResult } from "@/components/arcade/GameShell";
 import { GameLayout } from "@/components/arcade/GameLayout";
+import { Detent } from "@/components/focal/Detent";
 import { RoundReveal } from "@/components/arcade/RoundReveal";
 import { generate, evaluate, COLOUR_TYPES, TYPE_LABEL, MAX_ROUND_POINTS, ROUNDS_PER_SESSION, type ColourRound } from "@/lib/colour/engine";
 import { COLOUR_COLUMNS, COLOUR_GAME } from "@/lib/colour/leaderboard";
@@ -160,14 +161,14 @@ export function ColourGame({
       }
       action={
         !locked ? (
-          <button
+          <Detent
             type="button"
             onClick={lockIn}
             className="font-display tracking-[0.24em] text-[13px] px-6 py-3 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.2)]"
             style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)" }}
           >
             ▣ LOCK IT IN
-          </button>
+          </Detent>
         ) : undefined
       }
     >
@@ -236,12 +237,22 @@ export function ColourGame({
               <span>your mix</span>
             </div>
 
-            {/* Signed per-channel misses — which way your eye lied. */}
-            <div className="w-full flex flex-col gap-1.5" style={{ maxWidth: 380 }}>
-              <DeltaBar label="hue" value={hueDelta(round.target.h, attempt.h)} range={60} unit="°" />
-              <DeltaBar label="sat" value={attempt.s - round.target.s} range={40} />
-              <DeltaBar label="light" value={attempt.l - round.target.l} range={40} />
-            </div>
+            {/* Signed per-channel misses — which way your eye lied. The worst
+                channel fringes: the lens caught it. */}
+            {(() => {
+              const dh = hueDelta(round.target.h, attempt.h);
+              const ds = attempt.s - round.target.s;
+              const dl = attempt.l - round.target.l;
+              const mags = [Math.abs(dh) / 60, Math.abs(ds) / 40, Math.abs(dl) / 40];
+              const worst = mags.indexOf(Math.max(...mags));
+              return (
+                <div className="w-full flex flex-col gap-1.5" style={{ maxWidth: 380 }}>
+                  <DeltaBar label="hue" value={dh} range={60} unit="°" worst={worst === 0} />
+                  <DeltaBar label="sat" value={ds} range={40} worst={worst === 1} />
+                  <DeltaBar label="light" value={dl} range={40} worst={worst === 2} />
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -303,11 +314,14 @@ function DeltaBar({
   value,
   range,
   unit = "",
+  worst = false,
 }: {
   label: string;
   value: number;
   range: number;
   unit?: string;
+  /** The dominant miss — fringes with chromatic aberration. */
+  worst?: boolean;
 }) {
   const frac = Math.max(-1, Math.min(1, value / range));
   const half = Math.abs(frac) * 50;
@@ -316,7 +330,7 @@ function DeltaBar({
       <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-right" style={{ color: "var(--ink-dim)", width: 38 }}>
         {label}
       </span>
-      <div className="relative flex-1 rounded-full" style={{ height: 6, background: "rgba(0,0,0,0.35)", border: "1px solid var(--board-line)" }}>
+      <div className={`relative flex-1 rounded-full ${worst ? "aberrate-edge" : ""}`} style={{ height: 6, background: "rgba(0,0,0,0.35)", border: "1px solid var(--board-line)" }}>
         {/* zero mark */}
         <div className="absolute" style={{ left: "50%", top: -2, width: 1, height: 10, background: "var(--board-tick)" }} />
         <div

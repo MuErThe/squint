@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { animate, useReducedMotion } from "framer-motion";
 import { PanelFrame } from "@/components/PanelFrame";
 import { RoundDots } from "./RoundDots";
+import { FocalPlane } from "@/components/focal/FocalPlane";
 
 interface GameLayoutProps {
   /** Current challenge-type label, e.g. "BISECT" — the playfield panel label. */
@@ -74,8 +75,10 @@ export function GameLayout({
         {action && <div className="shrink-0">{action}</div>}
       </PanelFrame>
 
-      {/* Rail */}
-      <div className="flex flex-col gap-3 min-h-0">
+      {/* Rail — peripheral (fz-1) while aiming; racks sharp when the reveal
+          lands. The playfield itself never defocuses: the teach-back marks
+          are drawn on it, and you don't blur the evidence. */}
+      <FocalPlane level={reveal ? 0 : 1} className="flex flex-col gap-3 min-h-0">
         <PanelFrame label="SESSION" hint="this run">
           <div className="flex flex-col gap-3">
             <RoundDots
@@ -116,7 +119,7 @@ export function GameLayout({
             </div>
           )}
         </PanelFrame>
-      </div>
+      </FocalPlane>
     </div>
   );
 }

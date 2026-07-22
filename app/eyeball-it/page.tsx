@@ -370,6 +370,9 @@ function LinearLayer({
           {challenge.type === "optical-centre" &&
             challenge.geometric !== undefined &&
             line(challenge.geometric, "var(--ink-dim)", "1 2", 0.4)}
+          {/* the erring mark fringes — the lens caught the miss */}
+          {guessVal !== null && line(guessVal - 0.002, "var(--ab-red)", undefined, 0.5)}
+          {guessVal !== null && line(guessVal + 0.002, "var(--ab-cyan)", undefined, 0.5)}
           {guessVal !== null && line(guessVal, GUESS)}
           {line(challenge.target, TRUTH)}
           {guessVal !== null && (
@@ -413,6 +416,9 @@ function PointLayer({
       {locked && g && (
         <>
           <line x1={g.x * 100} y1={g.y * 100} x2={t.x * 100} y2={t.y * 100} stroke="var(--accent-hot)" strokeWidth="0.35" strokeDasharray="1 1.2" />
+          {/* aberration fringe on the miss */}
+          <circle cx={g.x * 100 - 0.25} cy={g.y * 100} r={1.5} fill="var(--ab-red)" />
+          <circle cx={g.x * 100 + 0.25} cy={g.y * 100} r={1.5} fill="var(--ab-cyan)" />
           <circle cx={g.x * 100} cy={g.y * 100} r={1.5} fill={GUESS} />
           <circle cx={t.x * 100} cy={t.y * 100} r={1.7} fill="none" stroke={TRUTH} strokeWidth="0.7" />
           <circle cx={t.x * 100} cy={t.y * 100} r={0.55} fill={TRUTH} />
@@ -462,6 +468,8 @@ function AngleLayer({
       {!locked && pv !== null && ray(pv, AIM)}
       {locked && gv !== null && (
         <>
+          {ray(gv - 0.5, "var(--ab-red)", 0.45)}
+          {ray(gv + 0.5, "var(--ab-cyan)", 0.45)}
           {ray(gv, GUESS)}
           {ray(challenge.targetDeg, TRUTH)}
           {/* redline arc between guess and truth, spec label at its middle */}
