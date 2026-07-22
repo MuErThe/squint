@@ -36,10 +36,14 @@ const DESCRIPTION =
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: TITLE,
+  title: {
+    default: TITLE,
+    template: "%s · Squint",
+  },
   description: DESCRIPTION,
   applicationName: "Squint",
   authors: [{ name: "Zabeeh" }],
+  alternates: { canonical: "./" },
   keywords: [
     "squint",
     "design games",
@@ -63,8 +67,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "og-image.png",
-        width: 1974,
-        height: 1097,
+        width: 1200,
+        height: 630,
         alt: "Squint — five-minute games that train a designer's eye",
         type: "image/png",
       },
@@ -86,6 +90,41 @@ export const metadata: Metadata = {
 // Keeping it out of the markup also means `next dev` isn't subject to it,
 // so development hot-reload (which needs eval) works normally.
 
+// Structured data for search + answer engines: the site as a free web app,
+// with each game enumerated so engines can cite them individually.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}#website`,
+      url: SITE_URL,
+      name: "Squint",
+      description: DESCRIPTION,
+      publisher: { "@type": "Person", name: "Zabeeh" },
+    },
+    {
+      "@type": "WebApplication",
+      "@id": `${SITE_URL}#app`,
+      name: "Squint",
+      url: SITE_URL,
+      applicationCategory: "DesignApplication",
+      operatingSystem: "Web browser",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" },
+      description:
+        "A free arcade of five-minute games that train a designer's instincts — visual accuracy, kerning, colour perception and divergent thinking — with teach-back feedback, local progress tracking and daily warm-up streaks.",
+      featureList: [
+        "Eyeball It — bisect, centre and align by eye, scored on pixel error",
+        "Kern Combat — space letters against the font's own kerning metrics",
+        "Colour Forge — mix and match colours, scored by CIEDE2000",
+        "Thirty Circles — the classic divergent-thinking sprint",
+        "Hand Tetris — gesture-controlled Tetris via webcam hand tracking",
+        "Daily Warm-Up — one round of each game with streak tracking",
+      ],
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -100,6 +139,10 @@ export default function RootLayout({
         className="h-full flex flex-col overflow-hidden"
         suppressHydrationWarning
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
         {children}
       </body>
     </html>

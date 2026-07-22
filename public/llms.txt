@@ -1,0 +1,40 @@
+# Squint
+
+> Squint (https://squint.mdzabeeh.com) is a free, browser-based arcade of
+> five-minute games that train a designer's instincts: visual accuracy,
+> letter spacing (kerning), colour perception and divergent thinking.
+> Tagline: "Train the eye you trust." No account needed; camera-based games
+> run entirely on-device and never upload video.
+
+## Games
+
+- [Eyeball It](https://squint.mdzabeeh.com/eyeball-it/): bisect, centre,
+  judge angles and proportions by eye; scored on pixel error with
+  design-spec redline feedback and micro-lessons (e.g. optical vs
+  geometric centre).
+- [Kern Combat](https://squint.mdzabeeh.com/kern-combat/): drag letters to
+  even spacing, graded against the typeface's own kerning metrics; teaches
+  the optical rules of letter spacing.
+- [Colour Forge](https://squint.mdzabeeh.com/colour-forge/): mix HSL colour
+  to match targets (including from memory and by complement); scored with
+  the perceptual CIEDE2000 formula plus a per-channel breakdown.
+- [Thirty Circles](https://squint.mdzabeeh.com/thirty-circles/): the classic
+  Bob McKim / IDEO divergent-thinking sprint — thirty circles into thirty
+  different things in three minutes; drawn by webcam-tracked hand or mouse;
+  reflection on fluency, flexibility, originality.
+- [Hand Tetris](https://squint.mdzabeeh.com/tetris/): gesture-controlled
+  Tetris via on-device MediaPipe hand tracking.
+- [Daily Warm-Up](https://squint.mdzabeeh.com/warm-up/): one round of each
+  game chained into a five-minute daily ritual with streak tracking.
+
+## How it teaches
+
+Every round ends with a teach-back reveal (the correct answer overlaid on
+the player's attempt, the error measured, and the design principle behind
+the miss), progress is tracked locally with accuracy trends, and round
+selection adapts toward the player's weakest challenge types.
+
+## More
+
+- [About & FAQ](https://squint.mdzabeeh.com/about/): what Squint is, who
+  it's for, privacy details, and how scoring works.
