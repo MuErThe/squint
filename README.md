@@ -1,9 +1,17 @@
-# Hand Tetris
+# Squint
 
-Gesture-controlled Tetris in the browser — steer falling pieces with your
-hand via the webcam. Live at **https://muerthe.github.io/hand-tetris/**.
+*Train the eye you trust.* A small arcade of five-minute games that sharpen
+a designer's eye, hand and imagination — divergent-thinking sprints and craft
+trainers, plus feedback and local progress tracking so they double as
+practice, not just play. Live at **https://squint.mdzabeeh.com/**.
 
-## Controls
+The hub (`/`) links out to each game. First up is **Hand Tetris**
+(`/tetris`); Eyeball It, Kern Combat, Colour Forge and Thirty Circles follow.
+All games share one arcade identity and a per-game leaderboard
+(see `supabase/schema.sql`, and `supabase/migrations/` for the multi-game
+migration).
+
+## Hand Tetris — controls
 
 | Gesture | Action |
 | --- | --- |

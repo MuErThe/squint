@@ -53,10 +53,10 @@ If the site lives at `https://example.com/`:
 ### Option B — `username.github.io/<repo>/` (sub-path)
 
 You must set `BASE_PATH` to your repo name so asset URLs resolve. Example for
-a repo called `hand-tetris`:
+a repo called `squint`:
 
 ```bash
-BASE_PATH=/hand-tetris npm run build
+BASE_PATH=/squint npm run build
 ```
 
 ### GitHub Actions

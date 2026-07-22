@@ -6,7 +6,7 @@ clip: drop the file in this folder **and** register its filename in the
 `MP3_OVERRIDES` map at the top of `lib/audio/sfx.ts`. Unregistered cues never
 touch the network, so the default build makes zero sound-asset requests.
 URLs are basePath-aware, so overrides also work on sub-path deployments like
-`username.github.io/hand-tetris/`.
+`username.github.io/squint/`.
 
 | File              | Synth fallback                              | Played when                                      |
 | ----------------- | ------------------------------------------- | ------------------------------------------------ |

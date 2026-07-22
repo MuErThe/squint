@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { reserveName } from "@/lib/leaderboard/api";
 import { LeaderboardModal } from "./LeaderboardModal";
@@ -16,6 +17,7 @@ import {
   validateName,
 } from "@/lib/leaderboard/profanity";
 import { generateRandomName } from "@/lib/leaderboard/random-name";
+import { TETRIS_COLUMNS, TETRIS_GAME } from "@/lib/tetris/leaderboard";
 
 interface StartResult {
   ok: boolean;
@@ -355,6 +357,18 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
               </button>
             )}
           </motion.div>
+          <Link
+            href="/"
+            className="fixed top-4 left-4 z-[55] font-mono text-[10px] uppercase tracking-[0.24em] px-3 py-2 rounded-[2px] border transition-all duration-150 hover:-translate-y-px"
+            style={{
+              borderColor: "var(--panel-border-strong)",
+              color: "var(--ink-dim)",
+              background: "rgba(0,0,0,0.35)",
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            ◂ arcade
+          </Link>
           <AnimatePresence>
             {!rulesOpen && (
               <motion.button
@@ -385,6 +399,10 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
           <LeaderboardModal
             show={boardOpen}
             onClose={() => setBoardOpen(false)}
+            game={TETRIS_GAME}
+            columns={TETRIS_COLUMNS}
+            eyebrow="hall of pilots"
+            countNoun="pilots"
             highlightName={stored?.name ?? null}
           />
         </motion.div>

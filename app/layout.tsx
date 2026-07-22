@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Silkscreen, JetBrains_Mono } from "next/font/google";
+import { Silkscreen, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
 // preload disabled — the boot placeholder doesn't render any text, so the
@@ -19,31 +19,45 @@ const jetbrainsMono = JetBrains_Mono({
   preload: false,
 });
 
-const SITE_URL = "https://muerthe.github.io/hand-tetris/";
-const TITLE = "Hand Tetris — play Tetris with your hands";
+// Proportional display serif for Kern Combat — expressive shapes with real
+// kerning pairs (AV, To, LT) make the spacing exercise legible. Self-hosted at
+// build time, so no CSP change.
+const fraunces = Fraunces({
+  variable: "--font-kern",
+  subsets: ["latin"],
+  weight: ["600"],
+  preload: false,
+});
+
+const SITE_URL = "https://squint.mdzabeeh.com/";
+const TITLE = "Squint — train the eye you trust";
 const DESCRIPTION =
-  "Gesture-controlled Tetris. Pinch to rotate, slide your hand to steer, dip below the line to drop. Made for landscape laptops and tablets.";
+  "Five-minute games that train a designer's instincts: eyeballing proportion, kerning, colour matching, the Thirty Circles divergent-thinking sprint, and gesture-controlled Tetris.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: DESCRIPTION,
-  applicationName: "Hand Tetris",
+  applicationName: "Squint",
   authors: [{ name: "Zabeeh" }],
   keywords: [
-    "tetris",
+    "squint",
+    "design games",
+    "designer training",
+    "kerning game",
+    "colour matching",
+    "divergent thinking",
+    "thirty circles",
     "hand tetris",
-    "gesture tetris",
+    "gesture game",
     "mediapipe",
-    "webcam game",
-    "browser tetris",
   ],
   referrer: "strict-origin-when-cross-origin",
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    siteName: "Hand Tetris",
+    siteName: "Squint",
     title: TITLE,
     description: DESCRIPTION,
     images: [
@@ -51,7 +65,7 @@ export const metadata: Metadata = {
         url: "og-image.png",
         width: 1974,
         height: 1097,
-        alt: "Hand Tetris — gesture-controlled Tetris start screen",
+        alt: "Squint — five-minute games that train a designer's eye",
         type: "image/png",
       },
     ],
@@ -98,7 +112,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${silkscreen.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${silkscreen.variable} ${jetbrainsMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body
         className="h-full flex flex-col overflow-hidden"
