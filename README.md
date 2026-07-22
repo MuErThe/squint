@@ -3,7 +3,7 @@
 *Train the eye you trust.* A small arcade of five-minute games that sharpen
 a designer's eye, hand and imagination — divergent-thinking sprints and craft
 trainers, plus feedback and local progress tracking so they double as
-practice, not just play. Live at **https://muerthe.github.io/squint/**.
+practice, not just play. Live at **https://squint.mdzabeeh.com/**.
 
 The hub (`/`) links out to each game. First up is **Hand Tetris**
 (`/tetris`); Eyeball It, Kern Combat, Colour Forge and Thirty Circles follow.

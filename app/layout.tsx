@@ -29,7 +29,7 @@ const fraunces = Fraunces({
   preload: false,
 });
 
-const SITE_URL = "https://muerthe.github.io/squint/";
+const SITE_URL = "https://squint.mdzabeeh.com/";
 const TITLE = "Squint — train the eye you trust";
 const DESCRIPTION =
   "Five-minute games that train a designer's instincts: eyeballing proportion, kerning, colour matching, the Thirty Circles divergent-thinking sprint, and gesture-controlled Tetris.";
