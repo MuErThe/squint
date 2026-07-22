@@ -24,6 +24,22 @@
   --board-bg: #17141f;
   --board-line: rgba(236, 230, 216, 0.14);
   --board-tick: rgba(236, 230, 216, 0.28);
+
+  /* ──────────────────────────────────────────────────────────────
+     FOCALISM — the interface is a lens.
+     Depth is focal distance; these are the doctrine's tokens.
+     ────────────────────────────────────────────────────────────── */
+  /* Warm-monochrome field scale (surfaces, darkest → most raised). */
+  --field-0: #0e0a14;
+  --field-1: #141019;
+  --field-2: #191420;
+  --field-3: #201a28;
+  /* The focus rack — the one easing every macro transition uses. */
+  --rack-ms: 340ms;
+  --rack-ease: cubic-bezier(0.33, 0, 0.15, 1);
+  /* Aberration fringes (colour = signal; error/defocus fringe like a lens). */
+  --ab-red: rgba(255, 70, 70, 0.4);
+  --ab-cyan: rgba(80, 220, 255, 0.35);
 }
 
 @theme inline {
@@ -50,7 +66,7 @@ body {
   overflow-x: hidden;
 }
 
-/* CRT scanlines */
+/* CRT scanlines — heritage whisper (Focalism metabolised the arcade) */
 body::before {
   content: "";
   position: fixed;
@@ -65,7 +81,7 @@ body::before {
     rgba(0, 0, 0, 0) 4px
   );
   mix-blend-mode: multiply;
-  opacity: 0.55;
+  opacity: 0.3;
 }
 
 /* Vignette */
@@ -198,6 +214,64 @@ button {
 }
 
 /* ────────────────────────────────────────────────────────────────────────
+   FOCALISM utilities
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Focus steps — the depth axis. fz-0 is the attended plane (sharp);
+   higher steps sit further from the focal plane. Blur is animated ONLY
+   through these transitions (the rack), never continuously. */
+.fz-0,
+.fz-1,
+.fz-2,
+.fz-3 {
+  transition: filter var(--rack-ms) var(--rack-ease),
+    opacity var(--rack-ms) var(--rack-ease);
+}
+.fz-0 { filter: none; }
+.fz-1 { filter: blur(2px) brightness(0.92) saturate(0.95); }
+.fz-2 { filter: blur(5px) brightness(0.82) saturate(0.85); }
+.fz-3 { filter: blur(9px) brightness(0.68) saturate(0.7); }
+/* Defocused planes shouldn't eat clicks meant for the focused one. */
+.fz-2, .fz-3 { pointer-events: none; }
+
+/* Chromatic aberration — rationed to error states and deep defocus.
+   The moment everything fringes, nothing means anything. */
+.aberrate-text {
+  text-shadow: 0.6px 0 var(--ab-red), -0.6px 0 var(--ab-cyan);
+}
+.aberrate-edge {
+  position: relative;
+}
+.aberrate-edge::before,
+.aberrate-edge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.aberrate-edge::before { border-color: var(--ab-red); transform: translateX(1px); }
+.aberrate-edge::after { border-color: var(--ab-cyan); transform: translateX(-1px); }
+
+/* Keyboard focus = a reticle, not a ring. */
+:focus-visible {
+  outline: 1px dashed color-mix(in srgb, var(--accent) 80%, transparent);
+  outline-offset: 4px;
+}
+
+/* Reduced motion: racks degrade to opacity-only; detents go instant. */
+@media (prefers-reduced-motion: reduce) {
+  .fz-0, .fz-1, .fz-2, .fz-3 {
+    transition: opacity 150ms linear;
+    filter: none;
+  }
+  .fz-1 { opacity: 0.85; }
+  .fz-2 { opacity: 0.55; }
+  .fz-3 { opacity: 0.35; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
    Hub bento grid + cards
    ──────────────────────────────────────────────────────────────────────── */
 
@@ -250,7 +324,20 @@ button {
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    filter var(--rack-ms) var(--rack-ease);
+}
+
+/* Focalism focus-pull: attending to one card racks its siblings out of
+   focus — the hub behaves like a lens choosing a subject. */
+.hub-bento:has(.bento-card:hover) .bento-card:not(:hover) {
+  filter: blur(2px) brightness(0.9) saturate(0.9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-bento:has(.bento-card:hover) .bento-card:not(:hover) {
+    filter: none;
+    opacity: 0.8;
+  }
 }
 .bento-card:hover,
 .bento-card:focus-visible {
