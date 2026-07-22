@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { RACK, sharpenIn } from "@/components/focal/FocalPlane";
+import { Detent } from "@/components/focal/Detent";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { reserveName } from "@/lib/leaderboard/api";
@@ -159,15 +161,14 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
           transition={{ duration: 0.3 }}
           className="fixed inset-0 z-40 flex items-start md:items-center justify-center px-6 py-6 overflow-y-auto overflow-x-hidden"
           style={{
-            background: "rgba(14,10,20,0.9)",
-            backdropFilter: "blur(24px)",
+            background: "rgba(14,10,20,0.68)",
           }}
         >
           <motion.div
-            initial={{ y: 20, opacity: 0, scale: 0.96 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 10, opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
+            initial={sharpenIn.initial}
+            animate={sharpenIn.animate}
+            exit={sharpenIn.exit}
+            transition={RACK}
             className="panel-bg relative rounded-[2px] border max-w-[560px] w-full overflow-hidden my-auto"
             style={{
               borderColor: "var(--panel-border-strong)",
@@ -303,7 +304,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
               )}
 
               <div className="flex flex-col gap-2 mt-6">
-                <button
+                <Detent
                   disabled={busy}
                   onClick={() => handleStart("camera")}
                   className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 disabled:opacity-50 hover:bg-[rgba(245,182,81,0.22)]"
@@ -317,7 +318,7 @@ export function StartScreen({ show, onStart, onDismiss }: StartScreenProps) {
                   {busy
                     ? busyReason.toUpperCase() || "WORKING…"
                     : "▶ PLAY WITH HANDS"}
-                </button>
+                </Detent>
                 <button
                   disabled={busy}
                   onClick={() => handleStart("keyboard")}

@@ -114,7 +114,11 @@ export default function AboutPage() {
             Progress is tracked locally so you can watch your accuracy trend over
             time, rounds adapt toward whatever you&apos;re worst at, and the Daily
             Warm-Up chains everything into a five-minute ritual before the real
-            work begins.
+            work begins. The interface itself is built in{" "}
+            <Link href="/focalism" className="underline decoration-dotted underline-offset-4" style={{ color: "var(--accent)" }}>
+              Focalism
+            </Link>
+            , a design language we invented where hierarchy is focus.
           </p>
 
           <h2 className="font-display text-[14px] tracking-[0.22em] mb-4" style={{ color: "var(--accent)" }}>

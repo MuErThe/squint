@@ -135,13 +135,22 @@ export default function Hub() {
         >
           🔒 camera games run entirely on-device · nothing leaves your browser
         </p>
-        <Link
-          href="/about"
-          className="font-mono text-[9px] uppercase tracking-[0.22em] mt-2 transition-colors hover:text-[var(--accent)]"
-          style={{ color: "var(--ink-dim)" }}
-        >
-          what is squint? →
-        </Link>
+        <div className="flex items-center gap-5 mt-2">
+          <Link
+            href="/about"
+            className="font-mono text-[9px] uppercase tracking-[0.22em] transition-colors hover:text-[var(--accent)]"
+            style={{ color: "var(--ink-dim)" }}
+          >
+            what is squint? →
+          </Link>
+          <Link
+            href="/focalism"
+            className="font-mono text-[9px] uppercase tracking-[0.22em] transition-colors hover:text-[var(--accent)]"
+            style={{ color: "var(--ink-dim)" }}
+          >
+            our design language →
+          </Link>
+        </div>
       </div>
     </main>
   );

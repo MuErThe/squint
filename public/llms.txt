@@ -38,3 +38,8 @@ selection adapts toward the player's weakest challenge types.
 
 - [About & FAQ](https://squint.mdzabeeh.com/about/): what Squint is, who
   it's for, privacy details, and how scoring works.
+- [Focalism](https://squint.mdzabeeh.com/focalism/): the design language
+  invented for Squint — "hierarchy is focus": depth via focal planes
+  instead of shadows, focus-rack transitions, signal-only colour, and
+  chromatic aberration marking errors. Manifesto, live specimens and
+  CSS adoption recipes. Squint is the reference implementation.

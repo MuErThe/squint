@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { RACK, sharpenIn } from "@/components/focal/FocalPlane";
+import { Detent } from "@/components/focal/Detent";
 import { Leaderboard } from "./Leaderboard";
 import type {
   LeaderboardRow,
@@ -62,15 +64,14 @@ export function GameOverOverlay({
           transition={{ duration: 0.25 }}
           className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto"
           style={{
-            background: "rgba(14,10,20,0.9)",
-            backdropFilter: "blur(24px)",
+            background: "rgba(14,10,20,0.72)",
           }}
         >
           <motion.div
-            initial={{ y: 20, opacity: 0, scale: 0.96 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 20, opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={sharpenIn.initial}
+            animate={sharpenIn.animate}
+            exit={sharpenIn.exit}
+            transition={RACK}
             className="panel-bg relative rounded-[2px] border max-w-[560px] w-full overflow-hidden"
             style={{
               borderColor: "rgba(255,120,73,0.45)",
@@ -160,7 +161,7 @@ export function GameOverOverlay({
               </div>
 
               <div className="flex flex-col gap-2">
-                <button
+                <Detent
                   onClick={onRestart}
                   className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.22)]"
                   style={{
@@ -171,7 +172,7 @@ export function GameOverOverlay({
                   }}
                 >
                   ↻ INSERT COIN
-                </button>
+                </Detent>
                 {onBackToMenu && (
                   <button
                     onClick={onBackToMenu}

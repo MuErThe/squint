@@ -11,6 +11,14 @@ All games share one arcade identity and a per-game leaderboard
 (see `supabase/schema.sql`, and `supabase/migrations/` for the multi-game
 migration).
 
+## Focalism
+
+The UI is built in **Focalism**, a design language invented for Squint —
+*hierarchy is focus*. Depth comes from focal planes (blur steps) instead of
+shadows, transitions are focus racks, colour appears only as signal, and
+erring marks fringe with chromatic aberration. The manifesto, live specimens
+and adoption recipes live at [/focalism](https://squint.mdzabeeh.com/focalism/).
+
 ## Hand Tetris — controls
 
 | Gesture | Action |
