@@ -104,6 +104,7 @@ export default function Hub() {
         >
           SQU
           <span
+            className="focal-breathe"
             style={{
               color: "var(--accent)",
               textShadow: "0 0 22px rgba(245,182,81,0.35)",

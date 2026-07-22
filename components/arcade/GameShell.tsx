@@ -9,6 +9,8 @@ import { SessionTimer } from "@/components/SessionTimer";
 import { PanelFrame } from "@/components/PanelFrame";
 import { Sparkline } from "./Sparkline";
 import { Vignette, type VignetteKind } from "./Vignette";
+import { FocalPlane, RACK, sharpenIn } from "@/components/focal/FocalPlane";
+import { Detent } from "@/components/focal/Detent";
 import {
   fetchTop10,
   submitScore,
@@ -203,6 +205,12 @@ export function GameShell({
 
   return (
     <div className="relative flex-1 flex flex-col w-full h-screen overflow-hidden" style={{ padding: "16px 18px" }}>
+      {/* Focalism: while the start overlay is up, the page itself sits in the
+          deep field — the lens defocuses; there is no glass veil. */}
+      <FocalPlane
+        level={phase === "start" && mounted ? 2 : 0}
+        className="flex-1 flex flex-col min-h-0"
+      >
       {/* Header */}
       <header className="shrink-0 flex items-center justify-between flex-wrap gap-3 mb-3">
         <div className="flex items-baseline gap-3">
@@ -257,8 +265,9 @@ export function GameShell({
           />
         )}
       </main>
+      </FocalPlane>
 
-      {/* Start overlay */}
+      {/* Start overlay — arrives by sharpening from the deep field */}
       <AnimatePresence>
         {phase === "start" && mounted && (
           <motion.div
@@ -267,13 +276,13 @@ export function GameShell({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto"
-            style={{ background: "rgba(14,10,20,0.92)", backdropFilter: "blur(20px)" }}
+            style={{ background: "rgba(14,10,20,0.55)" }}
           >
             <motion.div
-              initial={{ y: 18, opacity: 0, scale: 0.97 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 10, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              initial={sharpenIn.initial}
+              animate={sharpenIn.animate}
+              exit={sharpenIn.exit}
+              transition={RACK}
               className="panel-bg relative rounded-[2px] border w-full overflow-hidden my-auto"
               style={{ maxWidth: 520, borderColor: "var(--panel-border-strong)", boxShadow: "0 24px 60px rgba(0,0,0,0.55)" }}
             >
@@ -371,14 +380,14 @@ export function GameShell({
                   </div>
                 )}
 
-                <button
+                <Detent
                   disabled={busy}
                   onClick={handleStart}
                   className="font-display tracking-[0.24em] text-sm px-6 py-3.5 border w-full transition-all duration-150 disabled:opacity-50 hover:bg-[rgba(245,182,81,0.22)]"
                   style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)", boxShadow: "0 0 24px rgba(245,182,81,0.18)" }}
                 >
                   {busy ? "WORKING…" : "▶ START"}
-                </button>
+                </Detent>
               </div>
 
               {lbOnline && (
@@ -439,9 +448,9 @@ function GameOverPanel({
   return (
     <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center py-2">
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
+        initial={sharpenIn.initial}
+        animate={sharpenIn.animate}
+        transition={RACK}
         className="w-full"
         style={{ maxWidth: 520 }}
       >
@@ -493,13 +502,13 @@ function GameOverPanel({
             </div>
 
             <div className="flex flex-col gap-2">
-              <button
+              <Detent
                 onClick={onPlayAgain}
                 className="font-display tracking-[0.24em] text-sm px-6 py-3 border w-full transition-all duration-150 hover:bg-[rgba(245,182,81,0.22)]"
                 style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "rgba(245,182,81,0.1)" }}
               >
                 ↻ PLAY AGAIN
-              </button>
+              </Detent>
               <Link
                 href="/"
                 className="font-mono uppercase tracking-[0.22em] text-[11px] px-6 py-2 w-full text-center transition-colors hover:text-[var(--ink)]"

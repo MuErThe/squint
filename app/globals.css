@@ -207,7 +207,8 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .vg-anim,
-  .vg-anim * {
+  .vg-anim *,
+  .focal-breathe {
     animation: none !important;
     transition: none !important;
   }
@@ -253,6 +254,16 @@ button {
 }
 .aberrate-edge::before { border-color: var(--ab-red); transform: translateX(1px); }
 .aberrate-edge::after { border-color: var(--ab-cyan); transform: translateX(-1px); }
+
+/* The wordmark's eye breathes focus — slow, alive, never distracting. */
+@keyframes focal-breathe {
+  0%, 100% { filter: blur(0px); opacity: 1; }
+  50% { filter: blur(1.3px); opacity: 0.9; }
+}
+.focal-breathe {
+  display: inline-block;
+  animation: focal-breathe 4.5s ease-in-out infinite;
+}
 
 /* Keyboard focus = a reticle, not a ring. */
 :focus-visible {

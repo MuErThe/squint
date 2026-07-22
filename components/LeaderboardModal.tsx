@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { RACK, sharpenIn } from "@/components/focal/FocalPlane";
 import {
   fetchTop10,
   type LeaderboardRow,
@@ -86,16 +87,15 @@ export function LeaderboardModal({
           onClick={onClose}
           className="fixed inset-0 z-50 flex items-start md:items-center justify-center px-4 py-6 overflow-y-auto"
           style={{
-            background: "rgba(8,5,14,0.82)",
-            backdropFilter: "blur(6px)",
+            background: "rgba(8,5,14,0.7)",
           }}
         >
           <motion.div
             key="lb-card"
-            initial={{ y: 18, opacity: 0, scale: 0.96 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 12, opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.32, ease: "easeOut" }}
+            initial={sharpenIn.initial}
+            animate={sharpenIn.animate}
+            exit={sharpenIn.exit}
+            transition={RACK}
             onClick={(e) => e.stopPropagation()}
             className="panel-bg relative rounded-[2px] border max-w-[640px] w-full overflow-hidden my-auto"
             style={{

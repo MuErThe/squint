@@ -6,6 +6,7 @@ import { VisionFeed, type VisionFeedHandle } from "@/components/VisionFeed";
 import { initialGestureState } from "@/lib/hand/types";
 import { Sparkline } from "@/components/arcade/Sparkline";
 import { Vignette } from "@/components/arcade/Vignette";
+import { FocalPlane } from "@/components/focal/FocalPlane";
 import { bestScore, recordSession, scoreTrend, loadSessions } from "@/lib/learning/progress";
 import { playSfx, unlockAudio } from "@/lib/audio/sfx";
 import {
@@ -287,6 +288,8 @@ export default function ThirtyCirclesPage() {
 
   return (
     <div className="relative flex-1 flex flex-col w-full h-screen overflow-hidden" style={{ padding: "16px 18px" }}>
+      {/* Focalism: the page defocuses behind the start overlay — no glass veil. */}
+      <FocalPlane level={phase === "start" ? 2 : 0} className="flex-1 flex flex-col min-h-0">
       {/* Header */}
       <header className="shrink-0 flex items-center justify-between flex-wrap gap-3 mb-3">
         <div className="flex items-baseline gap-3">
@@ -373,6 +376,7 @@ export default function ThirtyCirclesPage() {
           />
         )}
       </main>
+      </FocalPlane>
 
       {/* Start overlay */}
       {phase === "start" && (
@@ -402,7 +406,7 @@ function StartOverlay({
   onCamera: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto" style={{ background: "rgba(14,10,20,0.92)", backdropFilter: "blur(20px)" }}>
+    <div className="fixed inset-0 z-40 flex items-center justify-center px-6 py-6 overflow-y-auto" style={{ background: "rgba(14,10,20,0.55)" }}>
       <Link href="/" className="fixed top-4 left-4 z-[55] font-mono text-[10px] uppercase tracking-[0.24em] px-3 py-2 rounded-[2px] border hover:-translate-y-px transition-transform" style={{ borderColor: "var(--panel-border-strong)", color: "var(--ink-dim)", background: "rgba(0,0,0,0.35)" }}>
         ◂ arcade
       </Link>
