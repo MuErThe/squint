@@ -21,7 +21,7 @@ const MP3_OVERRIDES: Partial<Record<SfxName, string>> = {
 };
 
 // basePath-aware URL prefix — required when the site deploys under a
-// sub-path (e.g. username.github.io/hand-tetris). Inlined at build time via
+// sub-path (e.g. username.github.io/squint). Inlined at build time via
 // next.config.ts.
 const SOUNDS_BASE = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/sounds/`;
 

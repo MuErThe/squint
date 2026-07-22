@@ -5,7 +5,7 @@ import type { NextConfig } from "next";
 //
 // If you deploy under a sub-path like https://<user>.github.io/<repo>/, set the
 // repo name as BASE_PATH at build time so all asset URLs resolve correctly:
-//   BASE_PATH=/hand-tetris npm run build
+//   BASE_PATH=/squint npm run build
 // For a custom domain (root path) leave BASE_PATH unset.
 const basePath = process.env.BASE_PATH || "";
 

@@ -2,6 +2,9 @@
 
 // localStorage-backed personal record + remembered credentials.
 
+// Legacy namespace from before the Squint rename — deliberately unchanged:
+// renaming it would orphan every existing player's stored token, locking them
+// out of the leaderboard name they registered.
 const NS = "hand-tetris/v1/";
 const K_PLAYER = `${NS}player`;
 const K_BEST = `${NS}best`;
