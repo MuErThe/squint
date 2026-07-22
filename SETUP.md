@@ -38,39 +38,27 @@ npm run build
 
 Output lands in `out/`. Serve it with any static host.
 
-## 4. Deploy to GitHub Pages
+## 4. Deploy to Vercel
 
-You have two paths.
+The site deploys as a static export (`output: "export"`); Vercel builds it
+with plain `npm run build` and serves `out/`.
 
-### Option A — custom domain (root path)
-
-If the site lives at `https://example.com/`:
-
-1. Put a `CNAME` file with your domain into `public/`.
-2. Build: `npm run build` (no `BASE_PATH` needed).
-3. Publish `out/` to your `gh-pages` branch (see GitHub Actions below).
-
-### Option B — `username.github.io/<repo>/` (sub-path)
-
-You must set `BASE_PATH` to your repo name so asset URLs resolve. Example for
-a repo called `squint`:
-
-```bash
-BASE_PATH=/squint npm run build
-```
-
-### GitHub Actions
-
-A workflow file is provided at `.github/workflows/deploy.yml`. To use it:
-
-1. Go to **Settings → Pages** and pick **"GitHub Actions"** as the source.
-2. Go to **Settings → Secrets and variables → Actions** and add:
+1. Import the GitHub repo at **vercel.com/new** (framework auto-detects as
+   Next.js — keep the defaults).
+2. Under **Project → Settings → Environment Variables**, add:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Push to `main`. The workflow builds and publishes automatically.
+3. Under **Project → Settings → Domains**, add your domain (e.g.
+   `squint.mdzabeeh.com`) and create the DNS record Vercel shows you
+   (a `CNAME` to `cname.vercel-dns.com`).
+4. Every push to `main` deploys production; other branches get preview URLs.
 
-If you're using the sub-path option, also set the repo variable
-`BASE_PATH=/your-repo` under **Variables**.
+Security headers (CSP, `frame-ancestors`, `Permissions-Policy`) are set as
+real response headers in `vercel.json` — if you self-host elsewhere, port
+those headers to your host's config.
+
+Hosting elsewhere still works: `BASE_PATH=/sub-path npm run build` for a
+sub-path static host, then publish `out/`.
 
 ## 5. Anti-cheat — what's in place
 
