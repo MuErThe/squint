@@ -30,19 +30,20 @@ const fraunces = Fraunces({
 });
 
 const SITE_URL = "https://muerthe.github.io/hand-tetris/";
-const TITLE = "Creative Arcade — games that sharpen a designer's mind";
+const TITLE = "Squint — train the eye you trust";
 const DESCRIPTION =
-  "Five-minute games that warm up a designer's eye, hand and imagination: gesture Tetris, kerning, colour matching, eyeballing proportion, and the Thirty Circles divergent-thinking sprint.";
+  "Five-minute games that train a designer's instincts: eyeballing proportion, kerning, colour matching, the Thirty Circles divergent-thinking sprint, and gesture-controlled Tetris.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: DESCRIPTION,
-  applicationName: "Creative Arcade",
+  applicationName: "Squint",
   authors: [{ name: "Zabeeh" }],
   keywords: [
-    "creative arcade",
+    "squint",
     "design games",
+    "designer training",
     "kerning game",
     "colour matching",
     "divergent thinking",
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: SITE_URL,
-    siteName: "Creative Arcade",
+    siteName: "Squint",
     title: TITLE,
     description: DESCRIPTION,
     images: [
@@ -64,7 +65,7 @@ export const metadata: Metadata = {
         url: "og-image.png",
         width: 1974,
         height: 1097,
-        alt: "Creative Arcade — games that sharpen a designer's mind",
+        alt: "Squint — five-minute games that train a designer's eye",
         type: "image/png",
       },
     ],

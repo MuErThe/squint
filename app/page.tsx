@@ -91,26 +91,27 @@ export default function Hub() {
   return (
     <main className="flex-1 overflow-y-auto overflow-x-hidden">
       <div className="min-h-full flex flex-col items-center px-5 py-10 md:py-12">
-        {/* Wordmark */}
+        {/* Wordmark — the I is the eye */}
         <div
           className="font-display text-[10px] tracking-[0.4em] mb-3"
           style={{ color: "var(--accent)" }}
         >
-          ─── warm up the mind ───
+          ─── train the eye you trust ───
         </div>
         <h1
           className="font-display tracking-[0.16em] leading-[0.95] text-center mb-3"
           style={{ color: "var(--ink)", fontSize: "clamp(34px, 8vw, 60px)" }}
         >
-          CREATIVE{" "}
+          SQU
           <span
             style={{
               color: "var(--accent)",
               textShadow: "0 0 22px rgba(245,182,81,0.35)",
             }}
           >
-            ARCADE
+            I
           </span>
+          NT
         </h1>
         <p
           className="font-mono text-[11px] md:text-[12px] uppercase tracking-[0.2em] text-center mb-8"
