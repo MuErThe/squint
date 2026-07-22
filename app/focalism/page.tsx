@@ -55,7 +55,7 @@ const LAWS: { n: string; title: string; body: string }[] = [
   {
     n: "06",
     title: "Warm precision",
-    body: "A fine instrument in a warm room. Exactness without coldness: charcoal fields, amber focus-light, honest measurements, calm at rest and cinematic only in motion. Accessibility is part of the optics — the focused plane always reads, and reduced-motion users get fades instead of racks.",
+    body: "A fine instrument in a warm room. Exactness without coldness: charcoal fields, amber focus-light, honest measurements, calm at rest and cinematic only in motion. And the work itself sits on lit paper — play surfaces are light while the room stays dark, because colour and type are judged truly against a light ground. Accessibility is part of the optics — the focused plane always reads, and reduced-motion users get fades instead of racks.",
   },
 ];
 
@@ -184,6 +184,12 @@ export default function FocalismPage() {
 /* error/deep-defocus only — ration it */
 .aberrate-text {
   text-shadow: .6px 0 var(--ab-red), -.6px 0 var(--ab-cyan);
+}
+
+/* the lit bench — play/work surfaces go light in a dark room */
+.paper {
+  background: #f2ecdf;             /* warm sketchbook stock */
+  color: #2a2118;                  /* drawing ink */
 }
 
 /* Rules of thumb:

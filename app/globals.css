@@ -34,6 +34,19 @@
   --field-1: #141019;
   --field-2: #191420;
   --field-3: #201a28;
+  /* Lit artboards — the work sits on warm paper; the room stays dark.
+     Play surfaces use the paper register; the cabinet never does. */
+  --paper-bg: #f2ecdf;
+  --paper-line: rgba(42, 33, 24, 0.18);
+  --paper-tick: rgba(42, 33, 24, 0.38);
+  --paper-ink: #2a2118;
+  --paper-dim: rgba(42, 33, 24, 0.55);
+  /* Neutral appraisal mat — the colour-science surround for judging colour. */
+  --mat-grey: #b8b4ab;
+  /* Signal inks tuned for light ground (dark-ground variants fail contrast). */
+  --truth-ink: #2f6b2a;
+  --guess-ink: #c2410c;
+  --aim-ink: #8f6410;
   /* The focus rack — the one easing every macro transition uses. */
   --rack-ms: 340ms;
   --rack-ease: cubic-bezier(0.33, 0, 0.15, 1);

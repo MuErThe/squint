@@ -284,7 +284,7 @@ export function KernGame({
             maxWidth: 820,
             height: 240,
             borderColor: "var(--panel-border-strong)",
-            background: "var(--board-bg)",
+            background: "var(--paper-bg)",
             touchAction: "none",
           }}
         >
@@ -296,7 +296,7 @@ export function KernGame({
                 style={{
                   top: `calc(50% - ${round.fontPx * 0.36}px)`,
                   height: 1,
-                  background: "var(--board-line)",
+                  background: "var(--paper-line)",
                 }}
               />
               <div
@@ -304,7 +304,7 @@ export function KernGame({
                 style={{
                   top: `calc(50% + ${round.fontPx * 0.36}px)`,
                   height: 1,
-                  background: "var(--board-line)",
+                  background: "var(--paper-line)",
                 }}
               />
             </>
@@ -319,7 +319,7 @@ export function KernGame({
                 bottom: 8,
                 fontSize: 9,
                 letterSpacing: "0.18em",
-                color: "var(--board-tick)",
+                color: "var(--paper-dim)",
               }}
             >
               {round.word.toLowerCase()} · fraunces 600 · {Math.round(round.fontPx)}px
@@ -348,8 +348,8 @@ export function KernGame({
                   lineHeight: 1,
                   color:
                     locked && (i === locked.score.worstGap || i === locked.score.worstGap - 1)
-                      ? "var(--accent-hot)"
-                      : "var(--ink)",
+                      ? "var(--guess-ink)"
+                      : "var(--paper-ink)",
                   cursor: locked ? "default" : i === 0 ? "default" : "ew-resize",
                   touchAction: "none",
                 }}
@@ -373,8 +373,8 @@ export function KernGame({
                   fontWeight: 600,
                   fontSize: round.fontPx,
                   lineHeight: 1,
-                  color: "var(--c-S)",
-                  opacity: 0.28,
+                  color: "var(--truth-ink)",
+                  opacity: 0.35,
                 }}
               >
                 {ch}
@@ -385,7 +385,7 @@ export function KernGame({
           {round && locked && (
             <div className="absolute inset-x-0 pointer-events-none" style={{ bottom: 26, height: 30 }}>
               {/* zero axis */}
-              <div className="absolute inset-x-0" style={{ top: "50%", height: 1, background: "var(--board-line)" }} />
+              <div className="absolute inset-x-0" style={{ top: "50%", height: 1, background: "var(--paper-line)" }} />
               {glyphs.slice(1).map((_, idx) => {
                 const i = idx + 1;
                 const dev =
@@ -402,8 +402,8 @@ export function KernGame({
                       left: x,
                       width: 3,
                       height: Math.max(2, h),
-                      background: worst ? "var(--accent-hot)" : "var(--ink-dim)",
-                      opacity: worst ? 1 : 0.55,
+                      background: worst ? "var(--guess-ink)" : "var(--paper-dim)",
+                      opacity: worst ? 1 : 0.7,
                       top: dev >= 0 ? `calc(50% - ${Math.max(2, h)}px)` : "50%",
                     }}
                   />

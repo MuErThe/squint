@@ -16,8 +16,10 @@ migration).
 The UI is built in **Focalism**, a design language invented for Squint —
 *hierarchy is focus*. Depth comes from focal planes (blur steps) instead of
 shadows, transitions are focus racks, colour appears only as signal, and
-erring marks fringe with chromatic aberration. The manifesto, live specimens
-and adoption recipes live at [/focalism](https://squint.mdzabeeh.com/focalism/).
+erring marks fringe with chromatic aberration. Play surfaces sit on lit warm
+paper while the cabinet stays dark — colour and type are judged truly against
+a light ground. The manifesto, live specimens and adoption recipes live at
+[/focalism](https://squint.mdzabeeh.com/focalism/).
 
 ## Hand Tetris — controls
 

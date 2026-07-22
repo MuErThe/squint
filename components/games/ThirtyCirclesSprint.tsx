@@ -32,7 +32,7 @@ export function ThirtyCirclesSprint({ onFinish }: { onFinish: (fluency: number) 
     const cw = w / COLS;
     const ch = h / ROWS;
     const r = Math.min(cw, ch) * 0.36;
-    ctx.strokeStyle = "rgba(245,182,81,0.22)";
+    ctx.strokeStyle = "rgba(42,33,24,0.22)";
     ctx.lineWidth = 1.25;
     for (let row = 0; row < ROWS; row++)
       for (let col = 0; col < COLS; col++) {
@@ -98,7 +98,7 @@ export function ThirtyCirclesSprint({ onFinish }: { onFinish: (fluency: number) 
   const strokeTo = (p: Point) => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    ctx.strokeStyle = "#ece6d8";
+    ctx.strokeStyle = "#2a2118";
     ctx.lineWidth = 3;
     const last = lastRef.current;
     if (last) {
@@ -157,7 +157,7 @@ export function ThirtyCirclesSprint({ onFinish }: { onFinish: (fluency: number) 
           lastRef.current = null;
         }}
         className="flex-1 min-h-0 w-full rounded-[2px] border"
-        style={{ borderColor: "var(--panel-border-strong)", background: "rgba(0,0,0,0.2)", cursor: "crosshair", touchAction: "none" }}
+        style={{ borderColor: "var(--panel-border-strong)", background: "var(--paper-bg)", cursor: "crosshair", touchAction: "none" }}
       />
     </div>
   );

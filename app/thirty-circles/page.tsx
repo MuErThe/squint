@@ -82,7 +82,7 @@ export default function ThirtyCirclesPage() {
     const cellW = w / GRID_COLS;
     const cellH = h / GRID_ROWS;
     const r = Math.min(cellW, cellH) * 0.38;
-    ctx.strokeStyle = "rgba(245,182,81,0.22)";
+    ctx.strokeStyle = "rgba(42,33,24,0.22)";
     ctx.lineWidth = 1.25;
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
@@ -126,7 +126,7 @@ export default function ThirtyCirclesPage() {
     (p: Point) => {
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
-      ctx.strokeStyle = "#ece6d8";
+      ctx.strokeStyle = "#2a2118";
       ctx.lineWidth = 3;
       const last = lastPointRef.current;
       if (last) {
@@ -137,7 +137,7 @@ export default function ThirtyCirclesPage() {
       } else {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = "#ece6d8";
+        ctx.fillStyle = "#2a2118";
         ctx.fill();
       }
       lastPointRef.current = p;
@@ -339,7 +339,7 @@ export default function ThirtyCirclesPage() {
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 className="w-full h-full rounded-[2px] border"
-                style={{ borderColor: "var(--panel-border-strong)", background: "var(--board-bg)", cursor: mode === "mouse" ? "crosshair" : "none", touchAction: "none" }}
+                style={{ borderColor: "var(--panel-border-strong)", background: "var(--paper-bg)", cursor: mode === "mouse" ? "crosshair" : "none", touchAction: "none" }}
               />
               {mode === "camera" && (
                 <div
@@ -489,7 +489,7 @@ function ReflectScreen({
         {/* Gallery — mounted on a mat, like a framed print */}
         <div
           className="rounded-[2px] border"
-          style={{ borderColor: "var(--panel-border-strong)", background: "var(--board-bg)", padding: 14 }}
+          style={{ borderColor: "var(--panel-border-strong)", background: "var(--paper-bg)", padding: 14 }}
         >
           {gallery ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -497,7 +497,7 @@ function ReflectScreen({
               src={gallery}
               alt="your thirty circles"
               className="w-full block rounded-[1px]"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid var(--board-line)" }}
+              style={{ background: "var(--paper-bg)", border: "1px solid var(--paper-line)" }}
             />
           ) : (
             <div className="p-10 text-center font-mono text-[11px]" style={{ color: "var(--ink-dim)" }}>no drawing captured</div>

@@ -242,7 +242,7 @@ function PlaySurface({
       className="absolute inset-0 w-full h-full rounded-[2px] border"
       style={{
         borderColor: "var(--panel-border-strong)",
-        background: "var(--board-bg)",
+        background: "var(--paper-bg)",
         cursor: locked ? "default" : "crosshair",
         touchAction: "none",
       }}
@@ -250,7 +250,7 @@ function PlaySurface({
       onClick={handleClick}
     >
       {/* artboard frame + edge rulers */}
-      <rect x="0.5" y="0.5" width="99" height="99" fill="none" stroke="var(--board-line)" strokeWidth="0.4" />
+      <rect x="0.5" y="0.5" width="99" height="99" fill="none" stroke="var(--paper-line)" strokeWidth="0.4" />
       <Rulers />
 
       {challenge.kind === "linear" && (
@@ -273,8 +273,8 @@ function Rulers() {
     const major = i === 50;
     const len = major ? 3 : 1.8;
     ticks.push(
-      <line key={`t${i}`} x1={i} y1={0.5} x2={i} y2={0.5 + len} stroke="var(--board-tick)" strokeWidth={major ? 0.4 : 0.25} />,
-      <line key={`l${i}`} x1={0.5} y1={i} x2={0.5 + len} y2={i} stroke="var(--board-tick)" strokeWidth={major ? 0.4 : 0.25} />,
+      <line key={`t${i}`} x1={i} y1={0.5} x2={i} y2={0.5 + len} stroke="var(--paper-tick)" strokeWidth={major ? 0.4 : 0.25} />,
+      <line key={`l${i}`} x1={0.5} y1={i} x2={0.5 + len} y2={i} stroke="var(--paper-tick)" strokeWidth={major ? 0.4 : 0.25} />,
     );
   }
   return <g opacity="0.8">{ticks}</g>;
@@ -304,7 +304,7 @@ function RedlineLinear({
         x={horizontal ? mid : at}
         y={horizontal ? at : mid - 1.6}
         fontSize="3"
-        fill="var(--accent-hot)"
+        fill="var(--guess-ink)"
         textAnchor="middle"
         fontFamily="var(--font-jetbrains-mono), monospace"
       >
@@ -314,13 +314,13 @@ function RedlineLinear({
   }
   const T = 1.4; // terminal half-length
   return (
-    <g stroke="var(--accent-hot)" strokeWidth="0.35">
+    <g stroke="var(--guess-ink)" strokeWidth="0.35">
       {horizontal ? (
         <>
           <line x1={p1} y1={at} x2={p2} y2={at} />
           <line x1={p1} y1={at - T} x2={p1} y2={at + T} />
           <line x1={p2} y1={at - T} x2={p2} y2={at + T} />
-          <text x={mid} y={at - 1.8} fontSize="3" fill="var(--accent-hot)" stroke="none" textAnchor="middle" fontFamily="var(--font-jetbrains-mono), monospace">
+          <text x={mid} y={at - 1.8} fontSize="3" fill="var(--guess-ink)" stroke="none" textAnchor="middle" fontFamily="var(--font-jetbrains-mono), monospace">
             {label}
           </text>
         </>
@@ -329,7 +329,7 @@ function RedlineLinear({
           <line x1={at} y1={p1} x2={at} y2={p2} />
           <line x1={at - T} y1={p1} x2={at + T} y2={p1} />
           <line x1={at - T} y1={p2} x2={at + T} y2={p2} />
-          <text x={at + 2} y={mid + 1} fontSize="3" fill="var(--accent-hot)" stroke="none" fontFamily="var(--font-jetbrains-mono), monospace">
+          <text x={at + 2} y={mid + 1} fontSize="3" fill="var(--guess-ink)" stroke="none" fontFamily="var(--font-jetbrains-mono), monospace">
             {label}
           </text>
         </>
@@ -338,9 +338,9 @@ function RedlineLinear({
   );
 }
 
-const GUESS = "var(--accent-hot)";
-const TRUTH = "var(--c-S)";
-const AIM = "var(--accent)";
+const GUESS = "var(--guess-ink)";
+const TRUTH = "var(--truth-ink)";
+const AIM = "var(--aim-ink)";
 
 function LinearLayer({
   challenge,
@@ -369,7 +369,7 @@ function LinearLayer({
         <>
           {challenge.type === "optical-centre" &&
             challenge.geometric !== undefined &&
-            line(challenge.geometric, "var(--ink-dim)", "1 2", 0.4)}
+            line(challenge.geometric, "var(--paper-dim)", "1 2", 0.4)}
           {/* the erring mark fringes — the lens caught the miss */}
           {guessVal !== null && line(guessVal - 0.002, "var(--ab-red)", undefined, 0.5)}
           {guessVal !== null && line(guessVal + 0.002, "var(--ab-cyan)", undefined, 0.5)}
@@ -404,7 +404,7 @@ function PointLayer({
   const p = preview?.kind === "point" ? preview : null;
   return (
     <>
-      <rect x={b.x * 100} y={b.y * 100} width={b.w * 100} height={b.h * 100} fill="rgba(236,230,216,0.02)" stroke="var(--board-tick)" strokeWidth="0.45" />
+      <rect x={b.x * 100} y={b.y * 100} width={b.w * 100} height={b.h * 100} fill="rgba(42,33,24,0.04)" stroke="var(--paper-tick)" strokeWidth="0.45" />
       {/* full crosshair while aiming — a designer's cursor, not a dot */}
       {!locked && p && (
         <>
@@ -415,7 +415,7 @@ function PointLayer({
       )}
       {locked && g && (
         <>
-          <line x1={g.x * 100} y1={g.y * 100} x2={t.x * 100} y2={t.y * 100} stroke="var(--accent-hot)" strokeWidth="0.35" strokeDasharray="1 1.2" />
+          <line x1={g.x * 100} y1={g.y * 100} x2={t.x * 100} y2={t.y * 100} stroke="var(--guess-ink)" strokeWidth="0.35" strokeDasharray="1 1.2" />
           {/* aberration fringe on the miss */}
           <circle cx={g.x * 100 - 0.25} cy={g.y * 100} r={1.5} fill="var(--ab-red)" />
           <circle cx={g.x * 100 + 0.25} cy={g.y * 100} r={1.5} fill="var(--ab-cyan)" />
@@ -426,7 +426,7 @@ function PointLayer({
             x={(g.x + t.x) * 50}
             y={(g.y + t.y) * 50 - 2.4}
             fontSize="3"
-            fill="var(--accent-hot)"
+            fill="var(--guess-ink)"
             textAnchor="middle"
             fontFamily="var(--font-jetbrains-mono), monospace"
           >
@@ -463,8 +463,8 @@ function AngleLayer({
   return (
     <>
       {/* baseline */}
-      {ray(0, "var(--ink-dim)", 0.45, "2 2")}
-      <circle cx={px} cy={py} r={1.2} fill="var(--ink)" />
+      {ray(0, "var(--paper-dim)", 0.45, "2 2")}
+      <circle cx={px} cy={py} r={1.2} fill="var(--paper-ink)" />
       {!locked && pv !== null && ray(pv, AIM)}
       {locked && gv !== null && (
         <>
@@ -494,7 +494,7 @@ function AngleLayer({
                   x={mid.x}
                   y={mid.y}
                   fontSize="3"
-                  fill="var(--accent-hot)"
+                  fill="var(--guess-ink)"
                   textAnchor="middle"
                   fontFamily="var(--font-jetbrains-mono), monospace"
                 >
